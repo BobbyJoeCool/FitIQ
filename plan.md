@@ -239,7 +239,7 @@ Each phase ends with something working and deployed.
 |---|---|
 | Must | Individual sign-in, private records, exercise search and detail, exercise images or demo links, plans, set logging, workout history, weight history, mobile layout, installable PWA |
 | Should | Body measurements, cardio and walking pad, CSV export |
-| Later | Offline logging with sync, family sharing and challenges, nutrition, wearables, self-hosted backend move (needs public HTTPS access, section 5), importing the exercise catalog into Postgres |
+| Later | Offline logging with sync, family sharing and challenges, nutrition, wearables, self-hosted backend move (needs public HTTPS access, section 5), importing the exercise catalog into Postgres. Tracked in [`docs/future-versions.md`](docs/future-versions.md), with a stretching upgrade added 2026-11-09 |
 
 ## 16. Risks
 
