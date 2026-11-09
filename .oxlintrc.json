@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "ignorePatterns": ["dist", "supabase/.temp"],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "@supabase/supabase-js",
+            "message": "Supabase calls live in src/lib/data/ (plan.md section 5)."
+          }
+        ],
+        "patterns": [
+          {
+            "group": ["**/lib/supabase", "**/lib/supabase.ts"],
+            "message": "Import from src/lib/data/ instead (plan.md section 5)."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/lib/**", "tests/rls/**"],
+      "rules": { "no-restricted-imports": "off" }
+    }
+  ]
+}
