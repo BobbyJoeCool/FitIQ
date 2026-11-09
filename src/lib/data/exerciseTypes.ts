@@ -1,8 +1,10 @@
+export type ExerciseSource = 'catalog' | 'custom'
+
 /** One exercise as the app sees it, whether from the catalog or the user's own. */
 export interface Exercise {
   /** Catalog: the dataset ID (e.g. "Barbell_Squat"). Custom: the row's UUID. */
   id: string
-  source: 'catalog' | 'custom'
+  source: ExerciseSource
   name: string
   description: string | null
   primaryMuscles: string[]
