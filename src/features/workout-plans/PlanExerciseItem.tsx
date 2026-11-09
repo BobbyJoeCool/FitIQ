@@ -172,7 +172,8 @@ function TargetsEditor({
   const [errors, setErrors] = useState<TargetsErrors>({})
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const set = (key: keyof TargetsForm, value: string) => setForm({ ...form, [key]: value })
+  const set = (key: Exclude<keyof TargetsForm, 'perSide'>, value: string) =>
+    setForm({ ...form, [key]: value })
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -227,7 +228,28 @@ function TargetsEditor({
             onChange={(e) => set('restSeconds', e.target.value)}
           />
         </Field>
+        <Field
+          label="Hold (sec)"
+          hint="For timed exercises like stretches"
+          error={errors.targetSeconds}
+        >
+          <input
+            className={controls.input}
+            inputMode="numeric"
+            placeholder="30"
+            value={form.targetSeconds}
+            onChange={(e) => set('targetSeconds', e.target.value)}
+          />
+        </Field>
       </div>
+      <label className={styles.checkbox}>
+        <input
+          type="checkbox"
+          checked={form.perSide}
+          onChange={(e) => setForm({ ...form, perSide: e.target.checked })}
+        />
+        Each side (left and right)
+      </label>
       <Field label="Notes (optional)" error={errors.notes}>
         <textarea
           className={controls.input}

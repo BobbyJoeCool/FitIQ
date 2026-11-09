@@ -119,6 +119,7 @@ plan.md section 18, mapped to steps: 1.1, 1.2, 1.3, 1.4 (deploy), 1.5 (Supabase 
 | 4.1 | #23 | Plan list and create or edit a plan | `ready-for-agent` | #14, #12 |
 | 4.2 | #24 | Add exercises to a plan with targets, rest, and notes | `ready-for-agent` | #23, #21 |
 | 4.3 | #25 | Reorder and archive plans | `ready-for-agent` | #24 |
+| 4.4 | #56 | Stretching: starter plan, hold targets, and hold timer (from future versions FV-1) | `ready-for-agent` | #25 |
 | 5.1 | #26 | Start a workout from a plan or from scratch | `ready-for-agent` | #24 |
 | 5.2 | #27 | Active workout: log sets with per-set saving | `ready-for-agent` | #26 |
 | 5.3 | #28 | Skip, next, mid-workout changes, and offline banner | `ready-for-agent` | #27 |

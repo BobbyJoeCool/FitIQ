@@ -28,6 +28,8 @@ const item = (id: string, overrides: Partial<PlanExercise> = {}): PlanExercise =
   targetSets: null,
   targetReps: null,
   restSeconds: null,
+  targetSeconds: null,
+  perSide: false,
   notes: null,
   ...overrides,
 })
@@ -197,6 +199,8 @@ describe('plan builder', () => {
       targetSets: 3,
       targetReps: '30 s',
       restSeconds: 45,
+      targetSeconds: null,
+      perSide: false,
       notes: null,
     })
     expect(await screen.findByText('3 × 30 s · Rest 45 s')).toBeInTheDocument()
@@ -365,5 +369,82 @@ describe('add to plan from an exercise', () => {
     renderRoute(`/exercises/custom/${LIBRARY[4].id}`)
     await screen.findByRole('heading', { name: 'Old Band Pull' })
     expect(screen.queryByRole('button', { name: 'Add to plan' })).not.toBeInTheDocument()
+  })
+})
+
+describe('starter plans', () => {
+  it('copies the full-body stretch into your plans', async () => {
+    const stretchIds = [
+      'Side_Neck_Stretch',
+      'Elbows_Back',
+      'Shoulder_Stretch',
+      'Triceps_Stretch',
+      'Upper_Back_Stretch',
+      'Standing_Lateral_Stretch',
+      'Calf_Stretch_Hands_Against_Wall',
+      'Kneeling_Hip_Flexor',
+      'On_Your_Side_Quad_Stretch',
+      'Hamstring_Stretch',
+      'Knee_Across_The_Body',
+      'Side_Lying_Groin_Stretch',
+      'Cat_Stretch',
+      'Childs_Pose',
+    ]
+    vi.mocked(data.loadCatalog).mockResolvedValue(
+      stretchIds.map((id) => ({ ...LIBRARY[0], id, name: id.replace(/_/g, ' ') })),
+    )
+    vi.mocked(data.createPlan).mockResolvedValue(plan({ name: 'Full-body stretch' }))
+    vi.mocked(data.addExercisesToPlan).mockResolvedValue()
+    const user = userEvent.setup()
+    const { router } = renderRoute('/plans')
+    await user.click(await screen.findByRole('link', { name: 'Use a starter plan' }))
+
+    const card = await screen.findByRole('article', { name: 'Full-body stretch' })
+    expect(within(card).getAllByRole('listitem')).toHaveLength(14)
+    expect(within(card).getAllByRole('listitem')[0]).toHaveTextContent(
+      'Side Neck Stretch · 1 × 30 s each side · Rest none',
+    )
+    await user.click(within(card).getByRole('button', { name: 'Add to my plans' }))
+
+    expect(data.createPlan).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Full-body stretch' }),
+    )
+    const [, planId, items] = vi.mocked(data.addExercisesToPlan).mock.calls[0]
+    expect(planId).toBe(PLAN_ID)
+    expect(items.map((i) => i.exercise.id)).toEqual(stretchIds)
+    expect(items[0].targets).toMatchObject({ targetSeconds: 30, perSide: true, targetSets: 1 })
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe(`/plans/${PLAN_ID}`))
+  })
+
+  it('saves hold targets from the targets editor', async () => {
+    vi.mocked(data.updatePlanExercise).mockImplementation(async (_user, id, targets) => ({
+      ...BUILDER.exercises[1],
+      id,
+      ...targets,
+    }))
+    const user = userEvent.setup()
+    renderRoute(`/plans/${PLAN_ID}`)
+    await user.click(
+      await screen.findByRole('button', { name: 'Edit targets for Walking Pad Incline Walk' }),
+    )
+    const editor = screen.getByRole('form', { name: 'Targets for Walking Pad Incline Walk' })
+    await user.type(within(editor).getByLabelText('Sets'), '2')
+    await user.type(within(editor).getByLabelText('Hold (sec)'), '30')
+    await user.click(within(editor).getByRole('checkbox', { name: 'Each side (left and right)' }))
+    await user.click(within(editor).getByRole('button', { name: 'Save targets' }))
+    expect(data.updatePlanExercise).toHaveBeenCalledWith(
+      'user-a',
+      'e2',
+      expect.objectContaining({ targetSets: 2, targetSeconds: 30, perSide: true }),
+    )
+    expect(await screen.findByText('2 × 30 s each side')).toBeInTheDocument()
+  })
+
+  it('filters the picker by movement type', async () => {
+    const user = userEvent.setup()
+    renderRoute(`/plans/${PLAN_ID}/add`)
+    await user.selectOptions(await screen.findByLabelText('Movement type'), 'stretching')
+    expect(screen.getByText('1 exercises')).toBeInTheDocument()
+    expect(screen.getByText('Hamstring Stretch')).toBeInTheDocument()
   })
 })

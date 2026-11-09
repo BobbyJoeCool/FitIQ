@@ -23,6 +23,10 @@ export interface PlanTargets {
   /** Text, so it can hold "8-12", "10", "30 s" or "AMRAP". */
   targetReps: string | null
   restSeconds: number | null
+  /** Hold or work time per set, for stretches and timed exercises. */
+  targetSeconds: number | null
+  /** The target applies to each side. */
+  perSide: boolean
   notes: string | null
 }
 
@@ -46,6 +50,8 @@ export const NO_TARGETS: PlanTargets = {
   targetSets: null,
   targetReps: null,
   restSeconds: null,
+  targetSeconds: null,
+  perSide: false,
   notes: null,
 }
 
@@ -67,12 +73,14 @@ interface PlanExerciseRow {
   target_sets: number | null
   target_reps: string | null
   rest_seconds: number | null
+  target_seconds: number | null
+  per_side: boolean
   notes: string | null
 }
 
 const PLAN_COLUMNS = 'id, name, description, is_archived, updated_at'
 const PLAN_EXERCISE_COLUMNS =
-  'id, plan_id, catalog_exercise_id, custom_exercise_id, sort_order, target_sets, target_reps, rest_seconds, notes'
+  'id, plan_id, catalog_exercise_id, custom_exercise_id, sort_order, target_sets, target_reps, rest_seconds, target_seconds, per_side, notes'
 
 function planFromRow(row: PlanRow, exerciseCount = 0): Plan {
   return {
@@ -96,6 +104,8 @@ function planExerciseFromRow(row: PlanExerciseRow): PlanExercise {
     targetSets: row.target_sets,
     targetReps: row.target_reps,
     restSeconds: row.rest_seconds,
+    targetSeconds: row.target_seconds,
+    perSide: row.per_side,
     notes: row.notes,
   }
 }
@@ -105,6 +115,8 @@ function targetsToRow(targets: PlanTargets) {
     target_sets: targets.targetSets,
     target_reps: targets.targetReps,
     rest_seconds: targets.restSeconds,
+    target_seconds: targets.targetSeconds,
+    per_side: targets.perSide,
     notes: targets.notes,
   }
 }
@@ -253,4 +265,39 @@ export async function reorderPlanExercises(planId: string, ids: string[]): Promi
     p_ids: ids,
   })
   if (error) throw toDataError(error, 'Could not save the new order.')
+}
+
+export interface NewPlanExercise {
+  exercise: ExerciseRef
+  targets: PlanTargets
+}
+
+/** Adds several exercises to the end of a plan in one request, in the order given. */
+export async function addExercisesToPlan(
+  userId: string,
+  planId: string,
+  items: NewPlanExercise[],
+): Promise<void> {
+  if (items.length === 0) return
+  const supabase = getSupabase()
+  const last = await supabase
+    .from('workout_plan_exercises')
+    .select('sort_order')
+    .eq('user_id', userId)
+    .eq('plan_id', planId)
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .returns<{ sort_order: number }[]>()
+  if (last.error) throw toDataError(last.error, 'Could not add the exercises.')
+  const start = (last.data[0]?.sort_order ?? -1) + 1
+  const { error } = await supabase.from('workout_plan_exercises').insert(
+    items.map((item, index) => ({
+      plan_id: planId,
+      catalog_exercise_id: item.exercise.source === 'catalog' ? item.exercise.id : null,
+      custom_exercise_id: item.exercise.source === 'custom' ? item.exercise.id : null,
+      sort_order: start + index,
+      ...targetsToRow(item.targets),
+    })),
+  )
+  if (error) throw toDataError(error, 'Could not add the exercises.')
 }

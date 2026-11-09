@@ -1,5 +1,11 @@
 import type { PlanTargets } from '../../lib/data'
 
+/** A hold or work time: 30 -> "30 s", 90 -> "1:30". */
+export function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds} s`
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+}
+
 /** 90 -> "1:30", 45 -> "45 s", 0 -> "none". */
 export function formatRest(seconds: number): string {
   if (seconds === 0) return 'none'
@@ -8,13 +14,21 @@ export function formatRest(seconds: number): string {
   return `${minutes}:${String(seconds % 60).padStart(2, '0')}`
 }
 
-/** "3 × 8-12 · Rest 1:30", or null when no targets are set. Notes are shown separately. */
+/**
+ * "3 × 8-12 · Rest 1:30", "2 × 30 s each side", or null when no targets are set.
+ * Notes are shown separately.
+ */
 export function formatTargets(targets: PlanTargets): string | null {
-  const { targetSets: sets, targetReps: reps, restSeconds: rest } = targets
+  const { targetSets: sets, targetReps: reps, restSeconds: rest, targetSeconds: hold } = targets
+  const side = targets.perSide ? ' each side' : ''
   const parts: string[] = []
-  if (sets && reps) parts.push(`${sets} × ${reps}`)
+  if (hold) {
+    const time = `${formatDuration(hold)}${side}`
+    parts.push(sets ? `${sets} × ${time}` : `Hold ${time}`)
+    if (reps) parts.push(`Reps ${reps}`)
+  } else if (sets && reps) parts.push(`${sets} × ${reps}${side}`)
   else if (sets) parts.push(sets === 1 ? '1 set' : `${sets} sets`)
-  else if (reps) parts.push(`Reps ${reps}`)
+  else if (reps) parts.push(`Reps ${reps}${side}`)
   if (rest !== null) parts.push(`Rest ${formatRest(rest)}`)
   return parts.length ? parts.join(' · ') : null
 }

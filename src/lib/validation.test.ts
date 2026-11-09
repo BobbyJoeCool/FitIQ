@@ -113,10 +113,24 @@ describe('validatePlan', () => {
 describe('validateTargets', () => {
   it('turns typed text into targets, with blanks as null', () => {
     expect(
-      validateTargets({ targetSets: ' 3 ', targetReps: ' 8-12 ', restSeconds: '90', notes: '' }),
+      validateTargets({
+        targetSets: ' 3 ',
+        targetReps: ' 8-12 ',
+        restSeconds: '90',
+        targetSeconds: ' 30 ',
+        perSide: true,
+        notes: '',
+      }),
     ).toEqual({
       ok: true,
-      value: { targetSets: 3, targetReps: '8-12', restSeconds: 90, notes: null },
+      value: {
+        targetSets: 3,
+        targetReps: '8-12',
+        restSeconds: 90,
+        targetSeconds: 30,
+        perSide: true,
+        notes: null,
+      },
     })
     expect(validateTargets(targetsToForm(NO_TARGETS))).toEqual({ ok: true, value: NO_TARGETS })
   })
@@ -126,6 +140,8 @@ describe('validateTargets', () => {
       targetSets: '0',
       targetReps: 'x'.repeat(21),
       restSeconds: '1.5',
+      targetSeconds: '601',
+      perSide: false,
       notes: 'x'.repeat(501),
     })
     expect(result.ok).toBe(false)
@@ -134,6 +150,7 @@ describe('validateTargets', () => {
         'notes',
         'restSeconds',
         'targetReps',
+        'targetSeconds',
         'targetSets',
       ])
     }

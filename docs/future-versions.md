@@ -23,7 +23,7 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 
 | # | Upgrade | Status | Depends on |
 | --- | --- | --- | --- |
-| FV-1 | [Stretching: a starter stretching plan, and stretch-aware plans](#fv-1-stretching) | Proposed | Phase 4 (done); hold timer needs Phase 5 |
+| FV-1 | [Stretching: a starter stretching plan, and stretch-aware plans](#fv-1-stretching) | Items 1–4 scheduled as step 4.4 (#56); item 5 still an idea | Phase 4 (done); hold timer needs Phase 5 |
 | FV-2 | [Offline workout logging with sync](#fv-2-offline-workout-logging-with-sync) | Idea | Phase 5, Phase 7 PWA |
 | FV-3 | [Move the backend to the home server](#fv-3-move-the-backend-to-the-home-server) | Idea | v1 done |
 | FV-4 | [Opt-in family sharing and challenges](#fv-4-opt-in-family-sharing-and-challenges) | Idea | v1 done |
@@ -36,7 +36,7 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 
 ### FV-1. Stretching
 
-- **Status:** Proposed (requested 2026-11-09)
+- **Status:** Items 1 to 4 scheduled as step 4.4 (#56), 2026-11-09: starter plan, picker filter and hold targets in the `stretching` branch; the hold timer with Phase 5. Item 5 is still an idea.
 - **Why:** stretching and mobility work should be as easy to follow as a lifting plan: a ready-made routine to start from, and targets that fit holds rather than reps.
 - **Source:** Bob, 2026-11-09.
 
