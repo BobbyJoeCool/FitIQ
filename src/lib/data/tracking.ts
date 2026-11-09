@@ -404,3 +404,63 @@ export async function deleteCardio(userId: string, id: string) {
     .eq('id', id)
   if (error) throw toDataError(error, 'Could not delete the session.')
 }
+
+// ---------------------------------------------------------------------------
+// Export (step 8.2): every row, paging past the API's 1000-row limit.
+// ---------------------------------------------------------------------------
+
+async function fetchAll<Row>(
+  table: string,
+  columns: string,
+  userId: string,
+  orderBy: string,
+  what: string,
+): Promise<Row[]> {
+  const pageSize = 1000
+  const all: Row[] = []
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await getSupabase()
+      .from(table)
+      .select(columns)
+      .eq('user_id', userId)
+      .order(orderBy, { ascending: true })
+      .range(from, from + pageSize - 1)
+      .returns<Row[]>()
+    if (error) throw toDataError(error, `Could not export your ${what}.`)
+    all.push(...data)
+    if (data.length < pageSize) return all
+  }
+}
+
+export async function listAllWeighIns(userId: string): Promise<WeighIn[]> {
+  const rows = await fetchAll<WeighInRow>(
+    'weight_history',
+    WEIGH_IN_COLUMNS,
+    userId,
+    'recorded_at',
+    'weigh-ins',
+  )
+  return rows.map(weighInFromRow)
+}
+
+export async function listAllMeasurements(userId: string): Promise<Measurement[]> {
+  const rows = await fetchAll<MeasurementRow>(
+    'body_measurements',
+    MEASUREMENT_COLUMNS,
+    userId,
+    'recorded_at',
+    'measurements',
+  )
+  return rows.map(measurementFromRow)
+}
+
+export async function listAllCardio(userId: string): Promise<CardioSession[]> {
+  const rows = await fetchAll<CardioRow>(
+    'cardio_sessions',
+    CARDIO_COLUMNS,
+    userId,
+    'started_at',
+    'cardio',
+  )
+  return rows.map(cardioFromRow)
+}

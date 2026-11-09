@@ -411,3 +411,26 @@ export async function getExerciseHistory(
     .filter((p) => p.sets.length > 0)
     .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
 }
+
+/**
+ * Every finished workout with all its exercises and sets, oldest first, for
+ * the CSV export (step 8.2). Pages through results, since the API returns at
+ * most 1000 rows per request.
+ */
+export async function listAllFinishedSessions(userId: string): Promise<WorkoutSession[]> {
+  const pageSize = 200
+  const all: WorkoutSession[] = []
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await getSupabase()
+      .from('workout_sessions')
+      .select(FULL_SESSION)
+      .eq('user_id', userId)
+      .not('completed_at', 'is', null)
+      .order('started_at', { ascending: true })
+      .range(from, from + pageSize - 1)
+      .returns<SessionRow[]>()
+    if (error) throw toDataError(error, 'Could not export your workouts.')
+    all.push(...data.map(sessionFromRow))
+    if (data.length < pageSize) return all
+  }
+}
