@@ -1,4 +1,6 @@
 import { Link, NavLink, Outlet } from 'react-router'
+import { OfflineBanner } from '../components/common/OfflineBanner'
+import { ProfileProvider } from '../features/profile/ProfileProvider'
 import { NAV_ITEMS } from './navigation'
 import styles from './AppShell.module.css'
 
@@ -42,7 +44,10 @@ export function AppShell() {
       </nav>
 
       <main className={styles.main}>
-        <Outlet />
+        <OfflineBanner />
+        <ProfileProvider>
+          <Outlet />
+        </ProfileProvider>
       </main>
 
       <nav className={styles.bottomNav} aria-label="Tabs">

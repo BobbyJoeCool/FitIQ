@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { LoadingScreen } from '../../components/common/LoadingScreen'
 import { BackLink } from '../../components/common/ReturnLink'
 import { StatusMessage } from '../../components/common/StatusMessage'
@@ -14,6 +14,7 @@ import {
 } from '../../lib/data'
 import controls from '../../styles/controls.module.css'
 import { useAuth } from '../auth/AuthContext'
+import { useStartWorkout } from '../workout-sessions/useStartWorkout'
 import { exerciseCount } from './format'
 import { PlanExerciseItem } from './PlanExerciseItem'
 import { exerciseKey, fallbackName, indexLibrary, loadPlanScreen } from './planScreen'
@@ -71,7 +72,9 @@ function PlanBuilder({
   onChange: (plan: PlanWithExercises) => void
 }) {
   const location = useLocation()
+  const navigate = useNavigate()
   const fromPlan = returnState(location, plan.name)
+  const starter = useStartWorkout(() => navigate('/workout'))
   const byKey = indexLibrary(library)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -133,6 +136,16 @@ function PlanBuilder({
       {plan.description && <p className={styles.description}>{plan.description}</p>}
 
       <div className={styles.actions}>
+        {plan.exercises.length > 0 && !plan.isArchived && (
+          <button
+            type="button"
+            className={controls.primary}
+            disabled={starter.starting !== null}
+            onClick={() => starter.start(plan)}
+          >
+            {starter.starting ? 'Starting…' : 'Start workout'}
+          </button>
+        )}
         <Link to="edit" state={fromPlan} className={controls.button}>
           Edit details
         </Link>
@@ -140,6 +153,11 @@ function PlanBuilder({
           {plan.isArchived ? 'Restore' : 'Archive'}
         </button>
       </div>
+      {starter.error && (
+        <p className={styles.error} role="alert">
+          {starter.error} <Link to="/workout">Go to your workout</Link>
+        </p>
+      )}
       {plan.isArchived && (
         <p className={styles.muted}>
           Archived plans are hidden from your list. Workouts you've done from this plan aren't
