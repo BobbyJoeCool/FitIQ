@@ -94,3 +94,15 @@ order by p.deletion_requested_at;
 ```
 
 Then follow **Remove someone** above, and let them know when it's done.
+
+## The public demo account (step 9.1)
+
+The README invites visitors to try FitIQ with a shared demo login. It's an ordinary account with made-up data, and RLS keeps it out of every family account, just as for anyone else.
+
+**Set up once:**
+
+1. Authentication → Users → **Add user → Create new user**: email `demo@bobbyjoecool.dev`, password `try-fitiq-demo`, and tick **Auto Confirm User**. These are public on purpose (they're in the README), so never reuse that password anywhere.
+2. Seed it from your machine: copy `scripts/demo.env.example` to `scripts/demo.env`, fill in the project URL, publishable key, and the demo login, then run `npm run seed:demo`. It refuses any email without "demo" in it.
+3. Optional, to reset it weekly: in **Settings → Secrets and variables → Actions**, add the variable `DEMO_EMAIL` and the secret `DEMO_PASSWORD`. The **Reseed demo account** workflow then runs every Monday, or on demand from the Actions tab.
+
+**What a visitor can and can't do:** they see only the demo account's data. The app hides Change password and the deletion request for it, but someone could still change its password through the API. If the demo login stops working, reset the password with the SQL in **Forgotten password** above, then reseed. To take the demo down, delete the user.

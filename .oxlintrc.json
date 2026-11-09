@@ -25,7 +25,7 @@
   },
   "overrides": [
     {
-      "files": ["src/lib/**", "tests/rls/**"],
+      "files": ["src/lib/**", "tests/rls/**", "scripts/**"],
       "rules": { "no-restricted-imports": "off" }
     }
   ]

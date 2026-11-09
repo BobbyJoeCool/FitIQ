@@ -49,3 +49,7 @@ Custom exercises use the same vocabularies, and they're enforced by CHECK constr
 
 - **RepDB** ([repdb.co](https://repdb.co)): the free tier requires visible attribution and forbids republishing the data or anything derived from it, and the larger tiers are paid and proprietary. A public repo and a $0 budget rule it out.
 - **MuscleWiki:** reference only. Don't copy or redistribute its content.
+
+## Screenshots in this repo
+
+`docs/screenshots/` contains exercise photos from Free Exercise DB as part of app screenshots. That's redistribution, which the Unlicense allows (public domain). Everything else in the screenshots is the made-up demo account.

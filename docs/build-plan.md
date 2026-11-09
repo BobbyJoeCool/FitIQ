@@ -38,6 +38,8 @@ Done when: A user can find an exercise and open its demo.
 
 ### Phase 4 — Workout plans
 
+Status: built 2026-11-09 (PRs #55, #57). Phases 5 to 9 were built the same day in stacked PRs #59 to #63; the manual steps (5.5, 7.5, 8.5, 8.6) are in Bob's test plan.
+
 Goal: Reusable plans: create, edit, add exercises with targets, rest, and notes, reorder, archive.
 
 Done when: A user can save a reusable routine.

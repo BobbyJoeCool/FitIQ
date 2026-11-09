@@ -387,7 +387,9 @@ export async function getExerciseHistory(
     .eq('user_id', userId)
     .eq(column, exercise.id)
     .not('workout_sessions.completed_at', 'is', null)
-    .order('created_at', { ascending: false })
+    // By the workout's own date, not when the row was written: a back-dated or
+    // imported workout must still sort correctly.
+    .order('workout_sessions(started_at)', { ascending: false })
     .limit(limit)
     .returns<
       {
