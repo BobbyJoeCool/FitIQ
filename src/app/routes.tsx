@@ -4,6 +4,7 @@ import { SignInPage } from '../features/auth/SignInPage'
 import { CardioPage } from '../features/cardio/CardioPage'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
 import { CustomExerciseDetailPage } from '../features/exercises/CustomExerciseDetailPage'
+import { CustomExerciseFormPage } from '../features/exercises/CustomExerciseFormPage'
 import { ExerciseDetailPage } from '../features/exercises/ExerciseDetailPage'
 import { ExercisesPage } from '../features/exercises/ExercisesPage'
 import { ProgressPage } from '../features/progress/ProgressPage'
@@ -24,7 +25,9 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'exercises', element: <ExercisesPage /> },
+      { path: 'exercises/custom/new', element: <CustomExerciseFormPage /> },
       { path: 'exercises/custom/:id', element: <CustomExerciseDetailPage /> },
+      { path: 'exercises/custom/:id/edit', element: <CustomExerciseFormPage /> },
       { path: 'exercises/:exerciseId', element: <ExerciseDetailPage /> },
       { path: 'plans', element: <PlansPage /> },
       { path: 'workout', element: <WorkoutPage /> },
