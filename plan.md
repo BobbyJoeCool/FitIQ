@@ -112,7 +112,7 @@ A code license does not automatically cover images or videos. If rights are uncl
 
 ### Library features
 
-Search by name. Filter by muscle, equipment, movement type, and difficulty. Detail view with instructions, images, optional video, and Add to Workout. Custom exercises. Exercises with no media are clearly marked.
+Search by name. Filter by muscle, equipment, movement type, and difficulty. Detail view with instructions, images, optional video, and Add to Plan (adds the exercise to one of your plans; starting a workout is Phase 5). Custom exercises. Exercises with no media are clearly marked.
 
 ## 8. Data model
 
