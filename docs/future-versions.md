@@ -29,7 +29,8 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 | FV-4 | [Opt-in family sharing and challenges](#fv-4-opt-in-family-sharing-and-challenges) | Idea | v1 done |
 | FV-5 | [Import the exercise catalog into Postgres](#fv-5-import-the-exercise-catalog-into-postgres) | Idea | None |
 | FV-6 | [Delete plans that no workout uses](#fv-6-delete-plans-that-no-workout-uses) | Idea | Phase 5 sessions |
-| FV-7 | [Not planned: nutrition, wearables, AI plans, native apps](#fv-7-not-planned) | Not planned | None |
+| FV-7 | [Programs: training by day, by rotation or weekly schedule](#fv-7-programs-training-by-day-by-rotation-or-weekly-schedule) | Proposed | Phase 4 (done); best before Phase 5 and 6.5 |
+| FV-8 | [Not planned: nutrition, wearables, AI plans, native apps](#fv-8-not-planned) | Not planned | None |
 
 ## Upgrades
 
@@ -256,6 +257,41 @@ All have images. Levels: 82 beginner, 29 intermediate, 12 expert. **Kind** is a 
 - **Data and security:** a delete policy limited to unreferenced plans, plus an RLS test case. ADR 0001 needs updating.
 - **Source:** `docs/adr/0001-delete-behavior.md`.
 
-### FV-7. Not planned
+### FV-7. Programs: training by day, by rotation or weekly schedule
+
+- **Status:** Proposed (requested 2026-11-09)
+- **Why:** people train in splits ("Day 1 Push, Day 2 Pull, Day 3 Legs"). Today each day is a separate plan, and the app doesn't know they belong together or which one is next. The dashboard step (6.5, #35) promises "today's planned workout", but nothing in plan.md or the data model defines how the app would know which that is. Programs fill that gap.
+- **Source:** Bob, 2026-11-09.
+
+**What:** a **program** is an ordered group of your existing plans, one per training day. When you create a program, you pick how it decides today's workout, and you can switch modes later:
+
+| | **Rotation** | **Weekly schedule** |
+| --- | --- | --- |
+| Setup | Order the days: Day 1, Day 2, Day 3... The same plan can appear twice (A, B, A). Optional rest days in the cycle | Pin each plan to one or more weekdays (Push: Mon, Thu). Unpinned days are rest days |
+| Today's workout | The day after the last one you **finished** from this program, wrapping from the last day back to Day 1. New programs start at Day 1 | Whatever is pinned to today's weekday (your phone's local time). A rest day says so, with "Start a different workout" |
+| Missed a day | Nothing is lost: the next day waits for you | That day passes. The next pinned day is shown |
+| Best for | Training when you can, 3 to 5 times a week, with no fixed days | Fixed days, such as a class schedule or set gym days |
+
+Both modes:
+
+- **One active program at a time.** The dashboard shows its next or today's workout with **Start Workout**. Other programs can be kept and switched to, and old ones archived.
+- **"Do a different day" or "skip to next day"** is always available. Rotation can also be reset to Day 1.
+- Starting from a program day is the same as starting from that plan (Phase 5.1). The session also records which program day it came from, so rotation knows where you are.
+- Plans stay usable on their own. A plan can belong to several programs, or to none.
+- **Without a program**, the dashboard falls back to the most recently used plan, plus "Start a workout".
+
+**Data and security** (a sketch, to settle when it's scheduled):
+
+- `programs`: id, user_id, name, `mode` (`rotation` | `weekly`), is_active, is_archived, timestamps. A partial unique index allows only one active program per user.
+- `program_days`: id, user_id, program_id, plan_id (null for a rotation rest day), `position` (rotation order) or `weekdays` (smallint array, 0 to 6, for weekly), with CHECKs so each row matches its program's mode.
+- `workout_sessions` gains a nullable `program_day_id` (set null if the day is removed), which is used to find "last finished day" for rotation.
+- Owner-only RLS on both new tables. The ownership trigger pattern from `workout_plan_exercises` makes sure a program's days, and their plans, belong to the same user. The RLS test gets both tables and cross-parent checks. Delete behavior goes in ADR 0001: programs are archived; program days can be removed.
+- Weekday is computed in the browser's local time zone, never on the server, so "today" matches the user's day.
+
+**Screens:** a **Programs** section on the Plans screen (create, choose mode, order or pin days, set active), and the dashboard card from 6.5.
+
+- **Depends on:** Phase 4 (done). The session link needs Phase 5's `workout_sessions` (2.5, #14). **Ideally decide before Phase 5.1 and 6.5**, since both touch how a workout is started and what "today's planned workout" means. If v1 ships without it, 6.5 should use the fallback above.
+
+### FV-8. Not planned
 
 These are v1 non-goals with no plan to add them: public profiles and social features, nutrition, wearables, AI-generated plans, custom video hosting, and native mobile apps (plan.md section 2). They're listed so they don't get re-suggested as new ideas. Move one up into an entry if that changes.
