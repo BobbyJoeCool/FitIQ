@@ -13,6 +13,7 @@ React, TypeScript, and Vite on GitHub Pages; Supabase Auth and PostgreSQL with R
 ## Docs
 
 - [`plan.md`](plan.md): product and technical plan
+- [`docs/exercise-sources.md`](docs/exercise-sources.md): exercise data license, the pinned dataset commit, and field mapping
 - [`docs/build-plan.md`](docs/build-plan.md): phased build plan, one GitHub issue per step (tracked in [#1](https://github.com/BobbyJoeCool/FitIQ/issues/1))
 
 ## Setup
