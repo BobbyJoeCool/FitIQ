@@ -22,6 +22,8 @@ Goal: A deployed React + TypeScript + Vite shell on GitHub Pages, CI checks, a S
 
 Done when: A push to `main` deploys automatically, and the deployed app can reach Supabase.
 
+**Status: done 2026-11-09.** Live at <https://fitiq.bobbyjoecool.dev>; all Phase 1 issues closed.
+
 ### Phase 2 — Auth and security
 
 Goal: Invite-only sign-in, profiles, the full v1 schema as migrations with RLS on every user-owned table, and an automated two-account RLS test.
