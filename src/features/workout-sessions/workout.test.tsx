@@ -151,6 +151,7 @@ describe('logging sets', () => {
     vi.mocked(data.getExerciseHistory).mockResolvedValue([
       {
         sessionId: 'old',
+        exerciseName: 'Barbell Squat',
         sessionName: 'Leg Day',
         startedAt: '2026-11-02T10:00:00Z',
         sets: [set({ reps: 8, weightValue: 135, weightUnit: 'lb' })],

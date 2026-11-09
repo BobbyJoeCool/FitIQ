@@ -12,7 +12,13 @@ import { CustomExerciseDetailPage } from '../features/exercises/CustomExerciseDe
 import { CustomExerciseFormPage } from '../features/exercises/CustomExerciseFormPage'
 import { ExerciseDetailPage } from '../features/exercises/ExerciseDetailPage'
 import { ExercisesPage } from '../features/exercises/ExercisesPage'
+import {
+  ExerciseProgressPage,
+  ExercisesProgressPage,
+} from '../features/progress/ExerciseProgressPages'
+import { MeasurementsPage } from '../features/progress/MeasurementsPage'
 import { ProgressPage } from '../features/progress/ProgressPage'
+import { WeightPage } from '../features/progress/WeightPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { AddExercisesPage } from '../features/workout-plans/AddExercisesPage'
 import { PlanBuilderPage } from '../features/workout-plans/PlanBuilderPage'
@@ -62,6 +68,10 @@ export const routes: RouteObject[] = [
       { path: 'workout/history', element: <HistoryPage /> },
       { path: 'workout/history/:id', element: <SessionDetailPage /> },
       { path: 'progress', element: <ProgressPage /> },
+      { path: 'progress/weight', element: <WeightPage /> },
+      { path: 'progress/measurements', element: <MeasurementsPage /> },
+      { path: 'progress/exercises', element: <ExercisesProgressPage /> },
+      { path: 'progress/exercises/:source/:id', element: <ExerciseProgressPage /> },
       { path: 'cardio', element: <CardioPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: '*', element: <NotFoundPage /> },

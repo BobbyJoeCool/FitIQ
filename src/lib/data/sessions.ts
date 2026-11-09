@@ -366,6 +366,8 @@ export async function listSessions(
 /** Every time the user did an exercise in a finished workout, newest first, with its sets. */
 export interface ExercisePerformance {
   sessionId: string
+  /** The exercise's name as copied into that workout. */
+  exerciseName: string
   sessionName: string
   startedAt: string
   sets: SessionSet[]
@@ -380,7 +382,7 @@ export async function getExerciseHistory(
   const { data, error } = await getSupabase()
     .from('workout_session_exercises')
     .select(
-      `id, created_at, workout_sessions!inner(id, name, started_at, completed_at), workout_sets(${SET_COLUMNS})`,
+      `id, created_at, exercise_name, workout_sessions!inner(id, name, started_at, completed_at), workout_sets(${SET_COLUMNS})`,
     )
     .eq('user_id', userId)
     .eq(column, exercise.id)
@@ -389,6 +391,7 @@ export async function getExerciseHistory(
     .limit(limit)
     .returns<
       {
+        exercise_name: string
         workout_sessions: { id: string; name: string; started_at: string }
         workout_sets: SetRow[]
       }[]
@@ -400,6 +403,7 @@ export async function getExerciseHistory(
   return data
     .map((row) => ({
       sessionId: row.workout_sessions.id,
+      exerciseName: row.exercise_name,
       sessionName: row.workout_sessions.name,
       startedAt: row.workout_sessions.started_at,
       sets: row.workout_sets.map(setFromRow).sort((a, b) => a.setNumber - b.setNumber),
