@@ -1,0 +1,27 @@
+.box {
+  padding: var(--space-5) var(--space-4);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.box[data-tone='error'] {
+  border-style: solid;
+  border-color: var(--color-danger);
+  color: var(--color-text);
+}
+
+.title {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.body {
+  margin-top: var(--space-2);
+}
+
+.action {
+  margin-top: var(--space-4);
+}

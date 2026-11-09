@@ -10,6 +10,7 @@ vi.mock('../lib/data')
 beforeEach(() => {
   vi.mocked(data.getCurrentUser).mockResolvedValue({ id: 'user-a', email: 'a@example.com' })
   vi.mocked(data.onAuthChange).mockReturnValue(() => {})
+  vi.mocked(data.loadExerciseLibrary).mockResolvedValue([])
   vi.mocked(data.checkConnection).mockResolvedValue({ ok: true, serverTime: 'now' })
   vi.mocked(data.getMyProfile).mockResolvedValue({
     id: 'user-a',
