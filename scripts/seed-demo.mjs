@@ -23,7 +23,9 @@ const DAY = 86_400_000
 const env = (name) => {
   const value = process.env[name]?.trim()
   if (!value) {
-    console.error(`Missing ${name}. Copy scripts/demo.env.example to scripts/demo.env and fill it in.`)
+    console.error(
+      `Missing ${name}. Copy scripts/demo.env.example to scripts/demo.env and fill it in.`,
+    )
     process.exit(2)
   }
   return value
@@ -147,11 +149,18 @@ async function main() {
 
   // 1. Profile and a custom exercise (with a video link, to show that feature).
   must(
-    await db.from('profiles').update({ display_name: 'Demo', weight_unit: 'lb', length_unit: 'in' }).eq('id', userId),
+    await db
+      .from('profiles')
+      .update({ display_name: 'Demo', weight_unit: 'lb', length_unit: 'in' })
+      .eq('id', userId),
     'profile',
   )
   let custom = must(
-    await db.from('custom_exercises').select('id').eq('user_id', userId).eq('name', 'Walking Pad Incline Walk'),
+    await db
+      .from('custom_exercises')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('name', 'Walking Pad Incline Walk'),
     'custom exercise',
   )[0]
   if (!custom) {
@@ -174,17 +183,28 @@ async function main() {
   }
 
   // 2. Wipe the history this script recreates (sessions cascade to exercises and sets).
-  for (const table of ['workout_sessions', 'weight_history', 'body_measurements', 'cardio_sessions']) {
+  for (const table of [
+    'workout_sessions',
+    'weight_history',
+    'body_measurements',
+    'cardio_sessions',
+  ]) {
     must(await db.from(table).delete().eq('user_id', userId), `clear ${table}`)
   }
 
   // 3. Plans: reuse by name (plans can't be deleted), restore, and replace their exercises.
   const plans = {}
   for (const plan of PLANS) {
-    let row = must(await db.from('workout_plans').select('id').eq('user_id', userId).eq('name', plan.name), 'plans')[0]
+    let row = must(
+      await db.from('workout_plans').select('id').eq('user_id', userId).eq('name', plan.name),
+      'plans',
+    )[0]
     if (row) {
       must(
-        await db.from('workout_plans').update({ description: plan.description, is_archived: false }).eq('id', row.id),
+        await db
+          .from('workout_plans')
+          .update({ description: plan.description, is_archived: false })
+          .eq('id', row.id),
         'update plan',
       )
       must(await db.from('workout_plan_exercises').delete().eq('plan_id', row.id), 'clear plan')
@@ -222,7 +242,13 @@ async function main() {
     const weekday = day.getDay()
     const week = Math.floor((56 - daysAgo) / 7)
     const plan =
-      weekday === 1 ? plans['Push Day'] : weekday === 3 ? plans['Leg Day'] : weekday === 5 && random() < 0.6 ? plans['Full-body stretch'] : null
+      weekday === 1
+        ? plans['Push Day']
+        : weekday === 3
+          ? plans['Leg Day']
+          : weekday === 5 && random() < 0.6
+            ? plans['Full-body stretch']
+            : null
     if (!plan || random() < 0.12) continue
     sessions.push({ plan, day, week })
   }
@@ -261,7 +287,10 @@ async function main() {
     })
   })
   const insertedExercises = must(
-    await db.from('workout_session_exercises').insert(exerciseRows).select('id, session_id, catalog_exercise_id, is_skipped'),
+    await db
+      .from('workout_session_exercises')
+      .insert(exerciseRows)
+      .select('id, session_id, catalog_exercise_id, is_skipped'),
     'session exercises',
   )
 
@@ -277,10 +306,21 @@ async function main() {
       continue
     }
     const [start, perWeek] = PROGRESSION[id]
-    const baseReps = { Barbell_Squat: 5, Romanian_Deadlift: 8, Leg_Press: 10, Standing_Calf_Raises: 15, Side_Lateral_Raise: 12 }[id] ?? 10
+    const baseReps =
+      {
+        Barbell_Squat: 5,
+        Romanian_Deadlift: 8,
+        Leg_Press: 10,
+        Standing_Calf_Raises: 15,
+        Side_Lateral_Raise: 12,
+      }[id] ?? 10
     for (let n = 1; n <= 3; n++) {
-      const reps = id === 'Pushups' ? 18 + week - n * 2 + Math.round(jitter(1)) : baseReps - (n === 3 && random() < 0.4 ? 1 : 0)
-      const weight = start === null ? null : round(start + perWeek * week, id === 'Side_Lateral_Raise' ? 2.5 : 5)
+      const reps =
+        id === 'Pushups'
+          ? 18 + week - n * 2 + Math.round(jitter(1))
+          : baseReps - (n === 3 && random() < 0.4 ? 1 : 0)
+      const weight =
+        start === null ? null : round(start + perWeek * week, id === 'Side_Lateral_Raise' ? 2.5 : 5)
       sets.push({
         session_exercise_id: ex.id,
         set_number: n,
@@ -313,9 +353,24 @@ async function main() {
     const at = new Date(today.getTime() - (56 - i * 14) * DAY)
     at.setHours(7, 20, 0, 0)
     measurements.push(
-      { recorded_at: at.toISOString(), measurement_type: 'waist', measurement_value: 36 - i * 0.4, measurement_unit: 'in' },
-      { recorded_at: at.toISOString(), measurement_type: 'chest', measurement_value: 41 + i * 0.1, measurement_unit: 'in' },
-      { recorded_at: at.toISOString(), measurement_type: 'body_fat', measurement_value: 24.5 - i * 0.5, measurement_unit: '%' },
+      {
+        recorded_at: at.toISOString(),
+        measurement_type: 'waist',
+        measurement_value: 36 - i * 0.4,
+        measurement_unit: 'in',
+      },
+      {
+        recorded_at: at.toISOString(),
+        measurement_type: 'chest',
+        measurement_value: 41 + i * 0.1,
+        measurement_unit: 'in',
+      },
+      {
+        recorded_at: at.toISOString(),
+        measurement_type: 'body_fat',
+        measurement_value: 24.5 - i * 0.5,
+        measurement_unit: '%',
+      },
     )
   }
   must(await db.from('body_measurements').insert(measurements), 'measurements')
