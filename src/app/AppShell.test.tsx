@@ -15,6 +15,8 @@ beforeEach(() => {
   vi.mocked(data.getLatestWeighIn).mockResolvedValue(null)
   vi.mocked(data.getInProgressSession).mockResolvedValue(null)
   vi.mocked(data.listSessions).mockResolvedValue({ items: [], hasMore: false })
+  vi.mocked(data.listCardio).mockResolvedValue({ items: [], hasMore: false })
+  vi.mocked(data.listCardioSince).mockResolvedValue([])
   vi.mocked(data.loadExerciseLibrary).mockResolvedValue([])
   vi.mocked(data.checkConnection).mockResolvedValue({ ok: true, serverTime: 'now' })
   vi.mocked(data.getMyProfile).mockResolvedValue({

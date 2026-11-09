@@ -1,3 +1,4 @@
+import type { CardioActivity } from '../cardioActivities'
 import type { MeasurementType } from '../measurementTypes'
 import type { LengthUnit, WeightUnit } from '../units'
 import { getSupabase } from '../supabase'
@@ -283,4 +284,123 @@ export async function listExercisesDone(userId: string): Promise<ExerciseDone[]>
     }
   }
   return [...byKey.values()].sort((a, b) => b.lastDone.localeCompare(a.lastDone))
+}
+
+// ---------------------------------------------------------------------------
+// Cardio (step 7.1)
+// ---------------------------------------------------------------------------
+
+export type { CardioActivity } from '../cardioActivities'
+
+export interface CardioSession {
+  id: string
+  activity: CardioActivity
+  startedAt: string
+  durationSeconds: number
+  distanceValue: number | null
+  distanceUnit: 'mi' | 'km' | null
+  incline: number | null
+  notes: string | null
+}
+
+export type CardioInput = Omit<CardioSession, 'id'>
+
+interface CardioRow {
+  id: string
+  activity_type: CardioActivity
+  started_at: string
+  duration_seconds: number
+  distance_value: number | string | null
+  distance_unit: 'mi' | 'km' | null
+  incline: number | string | null
+  notes: string | null
+}
+
+const CARDIO_COLUMNS =
+  'id, activity_type, started_at, duration_seconds, distance_value, distance_unit, incline, notes'
+
+const cardioFromRow = (row: CardioRow): CardioSession => ({
+  id: row.id,
+  activity: row.activity_type,
+  startedAt: row.started_at,
+  durationSeconds: row.duration_seconds,
+  distanceValue: row.distance_value === null ? null : num(row.distance_value),
+  distanceUnit: row.distance_unit,
+  incline: row.incline === null ? null : num(row.incline),
+  notes: row.notes,
+})
+
+const cardioToRow = (input: CardioInput) => ({
+  activity_type: input.activity,
+  started_at: input.startedAt,
+  duration_seconds: input.durationSeconds,
+  distance_value: input.distanceValue,
+  distance_unit: input.distanceValue === null ? null : input.distanceUnit,
+  incline: input.incline,
+  notes: input.notes,
+})
+
+/** Cardio sessions newest first, one page at a time. */
+export async function listCardio(
+  userId: string,
+  page: number,
+  pageSize = 20,
+): Promise<{ items: CardioSession[]; hasMore: boolean }> {
+  const from = page * pageSize
+  const { data, error } = await getSupabase()
+    .from('cardio_sessions')
+    .select(CARDIO_COLUMNS)
+    .eq('user_id', userId)
+    .order('started_at', { ascending: false })
+    .range(from, from + pageSize)
+    .returns<CardioRow[]>()
+  if (error) throw toDataError(error, 'Could not load your cardio.')
+  return { items: data.slice(0, pageSize).map(cardioFromRow), hasMore: data.length > pageSize }
+}
+
+/** Cardio since a date, for weekly totals. */
+export async function listCardioSince(userId: string, since: string): Promise<CardioSession[]> {
+  const { data, error } = await getSupabase()
+    .from('cardio_sessions')
+    .select(CARDIO_COLUMNS)
+    .eq('user_id', userId)
+    .gte('started_at', since)
+    .returns<CardioRow[]>()
+  if (error) throw toDataError(error, 'Could not load your cardio.')
+  return data.map(cardioFromRow)
+}
+
+export async function createCardio(input: CardioInput): Promise<CardioSession> {
+  const { data, error } = await getSupabase()
+    .from('cardio_sessions')
+    .insert(cardioToRow(input))
+    .select(CARDIO_COLUMNS)
+    .single<CardioRow>()
+  if (error) throw toDataError(error, 'Could not save the session.')
+  return cardioFromRow(data)
+}
+
+export async function updateCardio(
+  userId: string,
+  id: string,
+  input: CardioInput,
+): Promise<CardioSession> {
+  const { data, error } = await getSupabase()
+    .from('cardio_sessions')
+    .update(cardioToRow(input))
+    .eq('user_id', userId)
+    .eq('id', id)
+    .select(CARDIO_COLUMNS)
+    .single<CardioRow>()
+  if (error) throw toDataError(error, 'Could not save the session.')
+  return cardioFromRow(data)
+}
+
+export async function deleteCardio(userId: string, id: string) {
+  const { error } = await getSupabase()
+    .from('cardio_sessions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('id', id)
+  if (error) throw toDataError(error, 'Could not delete the session.')
 }

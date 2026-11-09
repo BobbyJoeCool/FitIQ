@@ -1,4 +1,11 @@
-import type { MeasurementInput, MeasurementType, MeasurementUnit, WeighInInput } from './data'
+import type { CardioActivity } from './cardioActivities'
+import type {
+  CardioInput,
+  MeasurementInput,
+  MeasurementType,
+  MeasurementUnit,
+  WeighInInput,
+} from './data'
 import type { WeightUnit } from './units'
 
 /**
@@ -111,4 +118,60 @@ export const MEASUREMENT_LABELS: Record<MeasurementType, string> = {
   left_calf: 'Left calf',
   right_calf: 'Right calf',
   body_fat: 'Body fat',
+}
+
+// ---------------------------------------------------------------------------
+// Cardio (step 7.1)
+// ---------------------------------------------------------------------------
+
+export interface CardioForm {
+  activity: CardioActivity
+  when: string
+  minutes: string
+  distance: string
+  distanceUnit: 'mi' | 'km'
+  incline: string
+  notes: string
+}
+
+export function validateCardio(
+  form: CardioForm,
+  now = new Date(),
+):
+  | { ok: true; value: CardioInput }
+  | { ok: false; errors: Partial<Record<keyof CardioForm, string>> } {
+  const errors: Partial<Record<keyof CardioForm, string>> = {}
+  const minutesText = form.minutes.trim()
+  const minutes = Number(minutesText)
+  if (!minutesText) errors.minutes = 'Enter how long, in minutes.'
+  else if (!NUMBER.test(minutesText) || minutes <= 0 || minutes > 1440) {
+    errors.minutes = 'Use minutes between 1 second and 24 hours, like 30 or 12.5.'
+  }
+  const distanceText = form.distance.trim()
+  const distance = Number(distanceText)
+  if (distanceText && (!NUMBER.test(distanceText) || distance > 1000)) {
+    errors.distance = 'Use a distance up to 1000, with at most 2 decimals.'
+  }
+  const inclineText = form.incline.trim()
+  const incline = Number(inclineText)
+  if (inclineText && (!/^\d+(\.\d)?$/.test(inclineText) || incline > 40)) {
+    errors.incline = 'Use an incline from 0 to 40 %, with at most 1 decimal.'
+  }
+  const when = parseWhen(form.when, now)
+  if (typeof when !== 'string') errors.when = when.error
+  const notes = form.notes.trim()
+  if (notes.length > 500) errors.notes = 'Keep notes under 501 characters.'
+  if (Object.keys(errors).length) return { ok: false, errors }
+  return {
+    ok: true,
+    value: {
+      activity: form.activity,
+      startedAt: when as string,
+      durationSeconds: Math.max(1, Math.round(minutes * 60)),
+      distanceValue: distanceText ? distance : null,
+      distanceUnit: distanceText ? form.distanceUnit : null,
+      incline: inclineText ? incline : null,
+      notes: notes || null,
+    },
+  }
 }

@@ -7,7 +7,15 @@ import type { Exercise } from './exerciseTypes'
  * (archived ones included; screens decide whether to show them), sorted by name.
  */
 export async function loadExerciseLibrary(userId: string): Promise<Exercise[]> {
-  const [catalog, custom] = await Promise.all([loadCatalog(), listMyCustomExercises(userId)])
+  const [catalog, custom] = await Promise.all([
+    loadCatalog(),
+    listMyCustomExercises(userId).catch((err: unknown) => {
+      // Offline, the cached catalog is still useful on its own (step 7.3);
+      // the offline banner explains why custom exercises are missing.
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return []
+      throw err
+    }),
+  ])
   return [...catalog, ...custom].sort((a, b) => a.name.localeCompare(b.name))
 }
 
