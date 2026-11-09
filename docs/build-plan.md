@@ -106,7 +106,7 @@ plan.md section 18, mapped to steps: 1.1, 1.2, 1.3, 1.4 (deploy), 1.5 (Supabase 
 | 2.2 | #11 | Profiles table with RLS | `ready-for-agent` | #10 |
 | 2.3 | #12 | Sign-in, sign-out, and protected routes | `ready-for-agent` | #11 |
 | 2.4 | #13 | Invite links: set-password page and owner runbook | `ready-for-agent` | #12 |
-| 2.5 | #14 | Full v1 schema with constraints, ownership triggers, and RLS (`custom_exercises` already landed with 3.6; `workout_plans` and `workout_plan_exercises` with Phase 4) | `ready-for-agent` | #11, #2 |
+| 2.5 | #14 | Full v1 schema with constraints, ownership triggers, and RLS (`custom_exercises` landed with 3.6, the plan tables with Phase 4, the rest in the `phase-2` branch) | `ready-for-agent` | #11, #2 |
 | 2.6 | #15 | Two-account RLS test script | `ready-for-agent` | #14 |
 | 2.7 | #16 | Create two test accounts and pass the RLS test | `ready-for-human` | #13, #15 |
 | 3.1 | #17 | Record the Free Exercise DB license and pin a dataset commit | `ready-for-agent` | None |

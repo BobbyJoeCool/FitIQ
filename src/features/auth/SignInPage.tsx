@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import { useAuth } from './AuthContext'
 import styles from './SignInPage.module.css'
 
@@ -69,6 +69,9 @@ export function SignInPage() {
             {submitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+        <p className={styles.note}>
+          <Link to="/forgot-password">Forgot your password?</Link>
+        </p>
         <p className={styles.note}>FitIQ is invite-only. Ask the household owner for an invite.</p>
       </div>
     </main>

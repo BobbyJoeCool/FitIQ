@@ -47,3 +47,40 @@ export function onAuthChange(listener: (user: AuthUser | null) => void): () => v
   })
   return () => data.subscription.unsubscribe()
 }
+
+/** The kinds of email link FitIQ handles at /auth/confirm (step 2.4). */
+export type EmailLinkType = 'invite' | 'recovery'
+
+/**
+ * Exchanges the token from an invite or password-reset email for a session.
+ * The email templates (supabase/templates/) link to /auth/confirm?token_hash=...&type=...
+ */
+export async function verifyEmailLink(tokenHash: string, type: EmailLinkType): Promise<AuthUser> {
+  const { data, error } = await getSupabase().auth.verifyOtp({ token_hash: tokenHash, type })
+  if (error) {
+    throw new DataError(
+      /expired|invalid/i.test(error.message)
+        ? 'This link has expired or was already used. Ask for a new one.'
+        : error.message,
+      error.code,
+    )
+  }
+  const user = toAuthUser(data.session)
+  if (!user) throw new DataError('The link did not sign you in. Ask for a new one.')
+  return user
+}
+
+/** Sets a new password for the signed-in user (after an invite or reset link). */
+export async function updatePassword(password: string): Promise<void> {
+  const { error } = await getSupabase().auth.updateUser({ password })
+  if (error) throw new DataError(error.message, error.code)
+}
+
+/**
+ * Emails a password-reset link. Supabase answers the same way whether or not
+ * the address has an account, so this never reveals who has one.
+ */
+export async function requestPasswordReset(email: string): Promise<void> {
+  const { error } = await getSupabase().auth.resetPasswordForEmail(email)
+  if (error) throw new DataError(error.message, error.code)
+}

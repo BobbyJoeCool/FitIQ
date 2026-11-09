@@ -1,5 +1,10 @@
 import type { RouteObject } from 'react-router'
 import { RequireAuth } from '../features/auth/RequireAuth'
+import {
+  ConfirmEmailLinkPage,
+  ForgotPasswordPage,
+  SetPasswordPage,
+} from '../features/auth/PasswordPages'
 import { SignInPage } from '../features/auth/SignInPage'
 import { CardioPage } from '../features/cardio/CardioPage'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
@@ -20,6 +25,16 @@ import { NotFoundPage } from './NotFoundPage'
 
 export const routes: RouteObject[] = [
   { path: '/sign-in', element: <SignInPage /> },
+  { path: '/forgot-password', element: <ForgotPasswordPage /> },
+  { path: '/auth/confirm', element: <ConfirmEmailLinkPage /> },
+  {
+    path: '/set-password',
+    element: (
+      <RequireAuth>
+        <SetPasswordPage />
+      </RequireAuth>
+    ),
+  },
   {
     element: (
       <RequireAuth>
