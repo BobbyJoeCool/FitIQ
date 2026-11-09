@@ -50,7 +50,7 @@ npm run db:new -- add_something   # create supabase/migrations/<timestamp>_add_s
 npm run db:start                  # local stack in Docker, built from the migrations alone
 npm run db:reset                  # rebuild the local database from scratch
 npx supabase link --project-ref <ref>   # once, to target the hosted project
-npm run db:push                   # apply new migrations to the hosted project
+npm run db:push                   # apply new migrations to the hosted project (--remote)
 ```
 
 `npx supabase status` prints the local URL and publishable key for a local `.env`. Local auth mirrors the hosted rules: signups are off, so create local users in Studio (<http://127.0.0.1:54323>) or with the local admin API. No dashboard schema edits on the hosted project: if it isn't in a migration, it doesn't exist.
