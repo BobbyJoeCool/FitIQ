@@ -1,0 +1,39 @@
+name: Supabase keep-alive
+
+# Supabase pauses Free-plan projects that have too little database activity
+# over a week (checked 2026-11-08):
+# https://supabase.com/docs/guides/platform/free-project-pausing
+# A paused project can be restored from the dashboard, but the app is down
+# until then. This job runs one real database query a week: the keepalive()
+# SQL function from supabase/migrations/20261108000000_foundation.sql, which
+# reads no table and returns only the server time.
+
+on:
+  schedule:
+    # Mondays and Thursdays 14:17 UTC: twice a week leaves margin if one run fails.
+    - cron: '17 14 * * 1,4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query the database
+        env:
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+            echo "::error::Set the VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY repo variables."
+            exit 1
+          fi
+          status=$(curl -sS -o response.json -w '%{http_code}' --retry 3 --retry-all-errors \
+            -X POST "$SUPABASE_URL/rest/v1/rpc/keepalive" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          echo "HTTP $status: $(cat response.json)"
+          [ "$status" = "200" ]
