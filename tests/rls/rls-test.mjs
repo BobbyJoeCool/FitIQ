@@ -33,6 +33,29 @@ const TABLES = [
     // Profiles are created by a trigger on auth.users, so nothing to insert.
     ensureOwnRow: async () => {},
   },
+  {
+    name: 'custom_exercises',
+    owner: 'user_id',
+    intrusion: { name: MARKER },
+    foreignInsert: (otherUserId) => ({
+      user_id: otherUserId,
+      name: MARKER,
+      primary_muscles: ['chest'],
+    }),
+    ensureOwnRow: async (client, userId) => {
+      const { data, error } = await client
+        .from('custom_exercises')
+        .select('id')
+        .eq('user_id', userId)
+        .limit(1)
+      if (error) throw new Error(`custom_exercises: ${error.message}`)
+      if (data.length) return
+      const insert = await client
+        .from('custom_exercises')
+        .insert({ name: 'RLS test exercise', primary_muscles: ['chest'], is_archived: true })
+      if (insert.error) throw new Error(`custom_exercises insert: ${insert.error.message}`)
+    },
+  },
 ]
 
 const env = (name) => {
