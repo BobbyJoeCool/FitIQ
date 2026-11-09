@@ -11,7 +11,7 @@
  * Exits non-zero on any leak or setup failure. Run it before every rollout.
  * Uses only the publishable key: it tests what a browser can do.
  *
- * Step 2.6 adds every table from the full schema (2.5) to TABLES.
+ * TABLES lists every user-owned table in the schema (step 2.6).
  * Child tables also get `crossChecks`: pointing your own row at the other
  * user's parent row (plan, exercise) must fail too, which owner-only RLS
  * alone doesn't guarantee.
@@ -172,6 +172,176 @@ const TABLES = [
         }
       }
     },
+  },
+  {
+    name: 'workout_sessions',
+    owner: 'user_id',
+    intrusion: { notes: MARKER },
+    foreignInsert: (otherUserId) => ({ user_id: otherUserId, name: MARKER }),
+    // Completed, so the test never leaves a workout "in progress" on a test account.
+    ensureOwnRow: (client, userId) =>
+      ensureRow(client, userId, 'workout_sessions', {
+        name: 'RLS test workout',
+        started_at: '2026-01-01T10:00:00Z',
+        completed_at: '2026-01-01T11:00:00Z',
+      }),
+    crossChecks: async (me, other) => {
+      const tag = `workout_sessions [${me.label} -> ${other.label}]`
+      const ins = await me.client
+        .from('workout_sessions')
+        .insert({
+          name: MARKER,
+          plan_id: owned.workout_plans[other.id],
+          started_at: '2026-01-02T10:00:00Z',
+          completed_at: '2026-01-02T11:00:00Z',
+        })
+        .select()
+      check(!!ins.error, `${tag} cannot start a workout from the other user's plan`)
+      if (!ins.error && ins.data?.length) {
+        await me.client.from('workout_sessions').delete().eq('id', ins.data[0].id)
+      }
+      const rpc = await me.client.rpc('start_workout', {
+        p_name: MARKER,
+        p_plan_id: owned.workout_plans[other.id],
+      })
+      check(!!rpc.error, `${tag} start_workout refuses the other user's plan`)
+      if (!rpc.error && rpc.data)
+        await me.client.from('workout_sessions').delete().eq('id', rpc.data)
+    },
+  },
+  {
+    name: 'workout_session_exercises',
+    owner: 'user_id',
+    intrusion: { notes: MARKER },
+    foreignInsert: (otherUserId) => ({
+      user_id: otherUserId,
+      session_id: owned.workout_sessions[otherUserId],
+      catalog_exercise_id: 'Barbell_Squat',
+      exercise_name: MARKER,
+      sort_order: 0,
+    }),
+    ensureOwnRow: (client, userId) =>
+      ensureRow(client, userId, 'workout_session_exercises', {
+        session_id: owned.workout_sessions[userId],
+        catalog_exercise_id: 'Barbell_Squat',
+        exercise_name: 'Barbell Squat',
+        sort_order: 0,
+      }),
+    crossChecks: async (me, other) => {
+      const tag = `workout_session_exercises [${me.label} -> ${other.label}]`
+      const intoTheirs = await me.client
+        .from('workout_session_exercises')
+        .insert({
+          session_id: owned.workout_sessions[other.id],
+          catalog_exercise_id: 'Barbell_Squat',
+          exercise_name: MARKER,
+          sort_order: 9,
+        })
+        .select()
+      check(!!intoTheirs.error, `${tag} cannot add an exercise to the other user's workout`)
+      const theirExercise = await me.client
+        .from('workout_session_exercises')
+        .insert({
+          session_id: owned.workout_sessions[me.id],
+          custom_exercise_id: owned.custom_exercises[other.id],
+          exercise_name: MARKER,
+          sort_order: 9,
+        })
+        .select()
+      check(!!theirExercise.error, `${tag} cannot log the other user's custom exercise`)
+      for (const leaked of [intoTheirs, theirExercise]) {
+        if (!leaked.error && leaked.data?.length) {
+          await me.client.from('workout_session_exercises').delete().eq('id', leaked.data[0].id)
+        }
+      }
+    },
+  },
+  {
+    name: 'workout_sets',
+    owner: 'user_id',
+    intrusion: { notes: MARKER },
+    foreignInsert: (otherUserId) => ({
+      user_id: otherUserId,
+      session_exercise_id: owned.workout_session_exercises[otherUserId],
+      set_number: 99,
+      reps: 1,
+    }),
+    ensureOwnRow: (client, userId) =>
+      ensureRow(client, userId, 'workout_sets', {
+        session_exercise_id: owned.workout_session_exercises[userId],
+        set_number: 1,
+        reps: 5,
+        weight_value: 100,
+        weight_unit: 'lb',
+      }),
+    crossChecks: async (me, other) => {
+      const tag = `workout_sets [${me.label} -> ${other.label}]`
+      const ins = await me.client
+        .from('workout_sets')
+        .insert({
+          session_exercise_id: owned.workout_session_exercises[other.id],
+          set_number: 98,
+          reps: 1,
+        })
+        .select()
+      check(!!ins.error, `${tag} cannot add a set to the other user's workout`)
+      if (!ins.error && ins.data?.length) {
+        await me.client.from('workout_sets').delete().eq('id', ins.data[0].id)
+      }
+    },
+  },
+  {
+    name: 'weight_history',
+    owner: 'user_id',
+    intrusion: { notes: MARKER },
+    foreignInsert: (otherUserId) => ({
+      user_id: otherUserId,
+      weight_value: 150,
+      weight_unit: 'lb',
+    }),
+    ensureOwnRow: (client, userId) =>
+      ensureRow(client, userId, 'weight_history', {
+        recorded_at: '2026-01-01T08:00:00Z',
+        weight_value: 180,
+        weight_unit: 'lb',
+        notes: 'RLS test weigh-in',
+      }),
+  },
+  {
+    name: 'body_measurements',
+    owner: 'user_id',
+    intrusion: { notes: MARKER },
+    foreignInsert: (otherUserId) => ({
+      user_id: otherUserId,
+      measurement_type: 'waist',
+      measurement_value: 30,
+      measurement_unit: 'in',
+    }),
+    ensureOwnRow: (client, userId) =>
+      ensureRow(client, userId, 'body_measurements', {
+        recorded_at: '2026-01-01T08:00:00Z',
+        measurement_type: 'waist',
+        measurement_value: 34,
+        measurement_unit: 'in',
+        notes: 'RLS test measurement',
+      }),
+  },
+  {
+    name: 'cardio_sessions',
+    owner: 'user_id',
+    intrusion: { notes: MARKER },
+    foreignInsert: (otherUserId) => ({
+      user_id: otherUserId,
+      activity_type: 'walk',
+      duration_seconds: 60,
+    }),
+    ensureOwnRow: (client, userId) =>
+      ensureRow(client, userId, 'cardio_sessions', {
+        activity_type: 'walking_pad',
+        started_at: '2026-01-01T07:00:00Z',
+        duration_seconds: 1800,
+        notes: 'RLS test cardio',
+      }),
   },
 ]
 
