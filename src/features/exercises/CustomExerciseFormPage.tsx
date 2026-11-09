@@ -1,9 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
+import { ReturnLink } from '../../components/common/ReturnLink'
 import { LoadingScreen } from '../../components/common/LoadingScreen'
 import { Field } from '../../components/forms/Field'
 import { StatusMessage } from '../../components/common/StatusMessage'
 import { useAsync } from '../../hooks/useAsync'
+import { useReturnTo } from '../../hooks/useReturnTo'
 import {
   createCustomExercise,
   getMyCustomExercise,
@@ -153,6 +155,8 @@ function SelectField({
 
 function ExerciseForm({ userId, existing }: { userId: string; existing: Exercise | null }) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { leave } = useReturnTo()
   const [form, setForm] = useState<CustomExerciseForm>(existing ? toForm(existing) : EMPTY_FORM)
   const [errors, setErrors] = useState<CustomExerciseErrors>({})
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -179,10 +183,15 @@ function ExerciseForm({ userId, existing }: { userId: string; existing: Exercise
     setErrors({})
     setSaving(true)
     try {
-      const saved = existing
-        ? await updateCustomExercise(userId, existing.id, result.value)
-        : await createCustomExercise(result.value)
-      navigate(`/exercises/custom/${saved.id}`, { replace: true })
+      if (existing) {
+        await updateCustomExercise(userId, existing.id, result.value)
+        // Back to the detail page it was opened from, which reloads the exercise.
+        leave(`/exercises/custom/${existing.id}`)
+      } else {
+        const saved = await createCustomExercise(result.value)
+        // Replace the form, keeping where it was opened from for the back link.
+        navigate(`/exercises/custom/${saved.id}`, { replace: true, state: location.state })
+      }
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Could not save the exercise.')
       setSaving(false)
@@ -292,9 +301,9 @@ function ExerciseForm({ userId, existing }: { userId: string; existing: Exercise
           <button type="submit" className={controls.primary} disabled={saving}>
             {saving ? 'Saving…' : existing ? 'Save changes' : 'Create exercise'}
           </button>
-          <Link to={cancelTo} className={controls.button}>
+          <ReturnLink fallback={cancelTo} replace className={controls.button}>
             Cancel
-          </Link>
+          </ReturnLink>
         </div>
       </form>
     </section>

@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { Link, useLocation, useSearchParams } from 'react-router'
 import { ExerciseCard } from '../../components/exercise/ExerciseCard'
 import { LoadingScreen } from '../../components/common/LoadingScreen'
 import { StatusMessage } from '../../components/common/StatusMessage'
 import { useAsync } from '../../hooks/useAsync'
+import { returnState } from '../../hooks/useReturnTo'
 import { loadExerciseLibrary } from '../../lib/data'
 import {
   DIFFICULTIES,
@@ -78,6 +79,8 @@ export function ExercisesPage() {
   const userId = user?.id ?? ''
   const { state, reload } = useAsync(() => loadExerciseLibrary(userId), userId)
   const [params, setParams] = useSearchParams()
+  const location = useLocation()
+  const fromLibrary = returnState(location, 'Exercises')
   const filters = readFilters(params)
   const [shown, setShown] = useState(PAGE_SIZE)
 
@@ -95,7 +98,7 @@ export function ExercisesPage() {
     <section>
       <div className={styles.header}>
         <h1>Exercises</h1>
-        <Link to="/exercises/custom/new" className={controls.primary}>
+        <Link to="/exercises/custom/new" state={fromLibrary} className={controls.primary}>
           New exercise
         </Link>
       </div>
@@ -205,7 +208,7 @@ export function ExercisesPage() {
           <ul className={styles.results}>
             {results.slice(0, shown).map((exercise) => (
               <li key={`${exercise.source}:${exercise.id}`}>
-                <ExerciseCard exercise={exercise} />
+                <ExerciseCard exercise={exercise} linkState={fromLibrary} />
               </li>
             ))}
           </ul>

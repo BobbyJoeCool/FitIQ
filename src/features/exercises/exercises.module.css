@@ -70,13 +70,6 @@
   margin-top: var(--space-4);
 }
 
-.back {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap-target);
-  margin-bottom: var(--space-2);
-}
-
 /* Form */
 
 .form {
