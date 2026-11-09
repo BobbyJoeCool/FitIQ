@@ -11,6 +11,10 @@ A private workout and progress tracker for a household of 2 to 4 people. Family 
 | Audience | Family first, portfolio second |
 | Offline | Installable PWA, online-only logging in v1 |
 | Signups | Invite-only. No public registration. |
+| Frontend URL | `https://fitiq.bobbyjoecool.dev` (custom domain on GitHub Pages) |
+| Default units | Imperial: pounds and inches for every account, changeable per user |
+| Sharing | Fully private in v1. Family sharing is a later version. |
+| Exercise catalog | Free Exercise DB, read at runtime from a pinned commit. Not stored in Postgres in v1. |
 
 ## 2. Goals and non-goals
 
@@ -38,7 +42,7 @@ Public profiles, social features, nutrition, wearables, AI-generated plans, cust
 | Routing | React Router (see the GitHub Pages note in section 4) |
 | Hosting | GitHub Pages, deployed by GitHub Actions |
 | Auth and DB | Supabase Auth and PostgreSQL with Row Level Security |
-| Exercise images | Static WebP/AVIF in the repo, only where licensing allows |
+| Exercise images | Loaded from the pinned Free Exercise DB commit on jsDelivr, not committed to the repo |
 | Exercise videos | External links or embeds, never hosted by FitIQ |
 | Unit/component tests | Vitest, React Testing Library |
 | E2E tests | Playwright |
@@ -50,8 +54,9 @@ GitHub Pages serves static files only. The browser talks to Supabase directly ov
 1. **Public repo required.** GitHub Pages on a free account needs a public repository. That fits the portfolio goal, but it means no secrets in the repo, ever, and media licensing matters more (section 7).
 2. **Supabase pauses inactive free projects** after roughly a week. Add a scheduled GitHub Actions job (weekly) that makes a lightweight request to the project so it stays active. Verify the current inactivity rules before launch.
 3. **SPA routing on Pages.** Refreshing a nested route returns a 404 on static hosting. Use a `404.html` redirect fallback or a hash router. Test refresh on nested routes.
-4. **Vite `base`** must match the Pages URL. Confirm images and routes work on the deployed URL, not just locally.
-5. **Auth redirect URLs.** Add the Pages URL and `localhost` to Supabase's allowed redirect list.
+4. **Vite `base`** must match the Pages URL. With the custom domain `fitiq.bobbyjoecool.dev` the app lives at `/`. The deploy workflow reads the base path from GitHub's Pages config, so the build also works at `bobbyjoecool.github.io/FitIQ/` before the domain is live. Confirm images and routes work on the deployed URL, not just locally.
+5. **Auth redirect URLs.** Add `https://fitiq.bobbyjoecool.dev` and `http://localhost:5173` to Supabase's allowed redirect list.
+6. **Custom domain.** A `CNAME` DNS record `fitiq` → `bobbyjoecool.github.io`, the domain set in the repo's Pages settings, and HTTPS enforced. With Actions-based deploys the domain lives in repo settings, not a `CNAME` file.
 
 ## 5. Keeping the backend portable
 
@@ -63,11 +68,13 @@ The MacBook move should stay cheap. To keep it that way:
 - Avoid Supabase-only features (Edge Functions, Storage, Realtime) in v1. Auth, Postgres, and the auto-generated API are all available in self-hosted Supabase.
 - Document the export and restore procedure (Phase 8) and test a restore into a local Postgres once.
 
+**What the move looks like.** The frontend stays on GitHub Pages; only Auth and Postgres move to the home server. Family members will use FitIQ outside the house, and their browsers talk to the backend directly, so the self-hosted backend must be reachable from the internet over HTTPS with a valid certificate (a page served over HTTPS cannot call an `http://` API). That means a public hostname such as `api.bobbyjoecool.dev` plus a tunnel or reverse proxy (for example Cloudflare Tunnel), with the server patched and backed up. The frontend change is then only the two `VITE_SUPABASE_*` values. This is post-v1 work.
+
 ## 6. Accounts, privacy, and security
 
 - Disable public signups in Supabase. The owner creates or invites each family member.
-- Each user can read and write only their own profile, plans, sessions, sets, weight, measurements, and cardio records.
-- The exercise catalog is readable by all signed-in users and writable by no one through the client. Custom exercises are readable and writable only by their creator.
+- **Fully private in v1.** Each user can read and write only their own profile, plans, sessions, sets, weight, measurements, cardio records, and custom exercises. No family member can see another's data. Opt-in sharing is a later version and will need its own RLS design.
+- The shared exercise catalog is not in the database in v1 (section 7), so there is no shared table for the client to write to. Custom exercises are readable and writable only by their creator.
 - **RLS on every user-owned table.** Add `user_id` to child tables (`workout_session_exercises`, `workout_sets`, `workout_plan_exercises`) and use `auth.uid() = user_id` on all of them. Checking ownership through parent joins on every query is slower and easier to get wrong.
 - Add a constraint or trigger so a child row's `user_id` must match its parent's.
 - The publishable key may live in frontend code. The service-role key and DB password never do.
@@ -76,9 +83,11 @@ The MacBook move should stay cheap. To keep it that way:
 
 ## 7. Exercise library
 
-### Source evaluation (do before importing anything)
+### Source
 
-Candidates: Free Exercise DB, RepDB. MuscleWiki is a reference only. Do not copy or redistribute its content.
+**Chosen: Free Exercise DB** (`github.com/yuhonas/free-exercise-db`, The Unlicense, about 870 exercises with images). RepDB was the other candidate. MuscleWiki is a reference only. Do not copy or redistribute its content.
+
+### Source evaluation (record before relying on it)
 
 For each source, record in `docs/exercise-sources.md`:
 
@@ -91,12 +100,15 @@ For each source, record in `docs/exercise-sources.md`:
 
 A code license does not automatically cover images or videos. If rights are unclear, import metadata only and link out for media. Because the repo is public, anything committed is redistributed.
 
-### Storage
+### Storage (v1: read at runtime, not imported)
 
-- **Metadata** (name, muscles, equipment, instructions, difficulty) goes in the `exercises` table.
-- **Illustrations** go in `public/exercises/` as compressed WebP/AVIF, with the relative path stored in the database. Keep the set small and lazy-load images.
-- **Videos** are stored only as a URL plus source name. Load them on tap, never in search results. Provide a plain link if embedding is blocked.
-- The import script runs outside the browser (`scripts/import-exercises/`), is repeatable, and uses a stable external ID so reruns do not create duplicates.
+- **Catalog metadata** is not copied into Postgres. The app fetches the dataset's `dist/exercises.json` from jsDelivr, pinned to one commit SHA, through `src/lib/data/exercises.ts`, and caches it in the browser. Pinning means upstream changes or renames never break saved plans; moving to a newer commit is a deliberate one-line change.
+- **Exercise IDs** are the dataset's own string IDs (e.g. `Barbell_Squat`). Plans and sessions store that ID as `catalog_exercise_id`.
+- **Images** load from the same pinned commit on jsDelivr, lazy-loaded. Nothing is committed to `public/exercises/` in v1.
+- **Custom exercises** live in a user-owned `custom_exercises` table and are merged into search results on the client.
+- **Videos**: the dataset has none. A video is stored only as a URL plus source name on custom exercises, loaded on tap, never in search results, with a plain link if embedding is blocked.
+- **Sessions keep history safe on their own**: each session exercise copies the exercise name at the time it was performed, so a catalog change never rewrites history.
+- Importing the catalog into Postgres (to edit or extend it, or to drop the jsDelivr dependency) is a possible later step, not v1.
 
 ### Library features
 
@@ -108,12 +120,12 @@ PostgreSQL, UUID primary keys, UTC timestamps, foreign keys and indexes on owner
 
 | Table | Key fields |
 |---|---|
-| `profiles` | id (= auth user ID), display_name, preferred weight unit, preferred length unit, timestamps |
-| `exercises` | id, external_id, name, description, primary_muscles, secondary_muscles, equipment, difficulty, movement_type, image paths, video_url, source_name, source_url, license, is_custom, created_by, is_archived |
+| `profiles` | id (= auth user ID), display_name, preferred weight unit (default `lb`), preferred length unit (default `in`), timestamps |
+| `custom_exercises` | id, user_id, name, description, primary_muscles, secondary_muscles, equipment, difficulty, movement_type, video_url, video_source_name, is_archived, timestamps |
 | `workout_plans` | id, user_id, name, description, is_archived, timestamps |
-| `workout_plan_exercises` | id, user_id, plan_id, exercise_id, sort_order, target_sets, target_reps (text, allows "8-12"), rest_seconds, notes |
+| `workout_plan_exercises` | id, user_id, plan_id, catalog_exercise_id (text, nullable), custom_exercise_id (nullable), sort_order, target_sets, target_reps (text, allows "8-12"), rest_seconds, notes |
 | `workout_sessions` | id, user_id, plan_id (nullable), name, started_at, completed_at, notes |
-| `workout_session_exercises` | id, user_id, session_id, exercise_id, sort_order, is_skipped, notes |
+| `workout_session_exercises` | id, user_id, session_id, catalog_exercise_id (text, nullable), custom_exercise_id (nullable), exercise_name (copied at the time), sort_order, is_skipped, notes |
 | `workout_sets` | id, user_id, session_exercise_id, set_number, reps, weight_value, weight_unit, duration_seconds, distance_value, distance_unit, is_completed, notes |
 | `weight_history` | id, user_id, recorded_at, weight_value, weight_unit, notes |
 | `body_measurements` | id, user_id, recorded_at, measurement_type, measurement_value, measurement_unit, notes |
@@ -122,7 +134,8 @@ PostgreSQL, UUID primary keys, UTC timestamps, foreign keys and indexes on owner
 **Rules**
 
 - Null is allowed where a field does not apply (a plank has duration, not reps).
-- Store each set's own weight unit so changing a unit preference never rewrites history.
+- A plan or session exercise points at exactly one of `catalog_exercise_id` or `custom_exercise_id` (CHECK constraint). The catalog ID has no foreign key because the catalog is not in the database.
+- Store each set's own weight unit so changing a unit preference never rewrites history. New accounts default to `lb` and `in`.
 - Archive plans and exercises instead of deleting them when sessions reference them.
 - Editing or archiving a plan must never change completed sessions. Sessions copy what was performed, not a live reference to plan targets.
 - Delete behavior (cascade vs restrict) is decided per relationship before the first migration.
@@ -139,7 +152,7 @@ PostgreSQL, UUID primary keys, UTC timestamps, foreign keys and indexes on owner
 
 ## 10. PWA (v1 scope)
 
-In scope: web app manifest, icons, installable on phones, cached app shell, cached exercise images.
+In scope: web app manifest, icons, installable on phones, cached app shell, cached exercise catalog JSON and images (runtime cache for the pinned jsDelivr URLs).
 
 Out of scope: offline logging and background sync. When offline, show a clear banner and block saves with a message rather than silently failing. Only the in-progress workout screen keeps unsaved input in component state so a failed request can be retried without retyping.
 
@@ -147,7 +160,7 @@ Offline workout entry (local queue, conflict handling, retry) is a later milesto
 
 ## 11. Cost
 
-Target: $0/month. GitHub Pages, Supabase Free, external video links. A custom domain is optional.
+Target: $0/month. GitHub Pages, Supabase Free, external video links, and the exercise catalog served free from jsDelivr. The custom domain uses the existing `bobbyjoecool.dev` registration.
 
 Protecting the quota:
 
@@ -163,7 +176,6 @@ The free tier has storage, bandwidth, pause, and backup limits. Treat it as not 
 ```
 fitiq/
   public/
-    exercises/
     icons/
   src/
     app/
@@ -180,8 +192,6 @@ fitiq/
   supabase/
     migrations/
     seed/
-  scripts/
-    import-exercises/
   docs/
     exercise-sources.md
     backup-restore.md
@@ -215,7 +225,7 @@ Each phase ends with something working and deployed.
 |---|---|---|
 | 1. Foundation | Repo, Vite + React + TS, responsive shell, GitHub Actions deploy, Pages live, Supabase project, env docs, keep-alive job | A push to `main` deploys automatically |
 | 2. Auth and security | Supabase Auth, invite-only signup, sign-in/out, profiles, first migrations, RLS, data-access layer, two test accounts, RLS test script | Each account sees only its own data |
-| 3. Exercise library | Source evaluation doc, import script, metadata in Supabase, permitted images, search, filters, detail view, video links | A user can find an exercise and open its demo |
+| 3. Exercise library | Source license doc, catalog client for the pinned Free Exercise DB, search, filters, detail view, custom exercises with video links | A user can find an exercise and open its demo |
 | 4. Workout plans | Create, edit, reorder, archive, targets, rest, notes | A user can save a reusable routine |
 | 5. Workout recording | Start from plan, log reps and weight, mark complete, skip, per-set saving, finish and review | A completed workout appears in history |
 | 6. Progress | Weigh-ins, weight chart, measurements, frequency, per-exercise history | A user can review progress over time |
@@ -229,26 +239,32 @@ Each phase ends with something working and deployed.
 |---|---|
 | Must | Individual sign-in, private records, exercise search and detail, exercise images or demo links, plans, set logging, workout history, weight history, mobile layout, installable PWA |
 | Should | Body measurements, cardio and walking pad, CSV export |
-| Later | Offline logging with sync, family sharing and challenges, nutrition, wearables, self-hosted backend move |
+| Later | Offline logging with sync, family sharing and challenges, nutrition, wearables, self-hosted backend move (needs public HTTPS access, section 5), importing the exercise catalog into Postgres |
 
 ## 16. Risks
 
 | Risk | Mitigation |
 |---|---|
-| Exercise media licensing | Document each source, import only clearly permitted media, link out otherwise. The public repo makes this a redistribution issue. |
+| Exercise media licensing | Free Exercise DB is public domain (The Unlicense), recorded in `docs/exercise-sources.md`. Media is hotlinked from the pinned commit, not redistributed from this repo. |
+| jsDelivr or the dataset disappears | Catalog is pinned to a commit and cached in the browser; sessions copy exercise names; importing into Postgres is the fallback. |
 | Supabase pausing or quota limits | Keep-alive job, usage monitoring, periodic exports, migrations in Git |
 | RLS misconfiguration exposes data | `user_id` on every user-owned table, automated two-account test, no real data until it passes |
 | Secret leaked in public repo | Only the publishable key in the frontend, `.gitignore` for env files, secret scanning enabled on the repo |
-| Dataset or video links change | Store metadata locally with source recorded, allow replacing a video URL without touching history |
+| Dataset or video links change | Pin the dataset commit, copy exercise names into sessions, allow replacing a video URL without touching history |
 | Backend lock-in | Plain SQL migrations, data-access layer, tested restore into local Postgres |
 
-## 17. Open questions
+## 17. Open questions (answered 2026-11-08)
 
 1. Which exercise dataset passes the license check (Phase 3)?
+   **Free Exercise DB.** For v1 the app reads it at runtime rather than storing it in the database (section 7).
 2. Preferred default units for each family member (lb/kg, in/cm)?
+   **Imperial** (lb and in) for everyone, still changeable per user in Settings.
 3. Should family members ever see each other's progress (opt-in sharing), or stay fully private?
+   **Fully private for v1.** Sharing comes in a future version (section 6).
 4. Custom domain, or the default `github.io` URL?
-5. When the home MacBook server move happens, will the family access FitIQ from outside the house? That decides whether the move needs remote access setup.
+   **Custom domain: `https://fitiq.bobbyjoecool.dev`** (section 4).
+5. When the home MacBook server move happens, will the family access FitIQ from outside the house?
+   **Yes.** The app stays on GitHub Pages and only the database (and Auth) moves to the server, so the server must be reachable from the internet over HTTPS (section 5).
 
 ## 18. First sprint
 

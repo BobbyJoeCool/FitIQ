@@ -14,6 +14,8 @@ Step 0.1 (repo setup, this plan, and the issues) is done and has no issue.
 
 Done when: Units, sharing, and domain answers are recorded in plan.md section 17 and anywhere else they change the plan.
 
+**Status: done 2026-11-08.** All five questions in plan.md section 17 are answered. See "Decisions that shaped this plan" below for what each one changed.
+
 ### Phase 1 — Foundation
 
 Goal: A deployed React + TypeScript + Vite shell on GitHub Pages, CI checks, a Supabase project, a data-access layer, and the keep-alive job.
@@ -28,7 +30,7 @@ Done when: Each account sees only its own data, proven by the RLS test script.
 
 ### Phase 3 — Exercise library
 
-Goal: A licensed exercise catalog in Supabase with search, filters, detail views, demo links, and custom exercises.
+Goal: The Free Exercise DB catalog, read at runtime from a pinned commit and cached in the browser, with search, filters, detail views, and private custom exercises (with optional video links).
 
 Done when: A user can find an exercise and open its demo.
 
@@ -68,6 +70,22 @@ Goal: A demo account, an architecture summary, and a README that shows FitIQ wor
 
 Done when: A stranger can understand and try FitIQ in two minutes.
 
+## Decisions that shaped this plan
+
+Answered in plan.md section 17 on 2026-11-08 (issue #2):
+
+| Decision | Effect on the steps |
+|---|---|
+| Exercise catalog: Free Exercise DB, read at runtime, not stored in Postgres | 3.1 records the license and pins a commit instead of comparing sources. 3.2 becomes a browser-side catalog client instead of an import script. 3.3 (run the import) is dropped. 2.5 replaces the shared `exercises` table with a private `custom_exercises` table and stores catalog IDs as text. 2.6 has no shared catalog table to test. 3.5, 7.3, and 7.4 load and cache images from jsDelivr instead of committing them. |
+| Default units: imperial (lb, in) | 2.2 defaults `profiles` to `lb` and `in`. 7.2 keeps them changeable. |
+| Sharing: fully private in v1 | 2.5 uses owner-only RLS on every table. No sharing tables or policies in v1. |
+| Frontend URL: `https://fitiq.bobbyjoecool.dev` | 1.4 deploys with base `/` (read from the Pages config, so `github.io/FitIQ/` also works until DNS is live) and Bob adds the DNS record and custom domain. 1.5 uses this URL for Supabase redirects. |
+| Server move: family uses it outside the house; only the database moves | Post-v1. The home server will need public HTTPS access (plan.md section 5). No v1 step changes. |
+
+## First sprint
+
+plan.md section 18, mapped to steps: 1.1, 1.2, 1.3, 1.4 (deploy), 1.5 (Supabase project, Bob), 1.6 (data layer), 2.1 and 2.2 (migrations and `profiles`), 2.3 (sign-in and sign-out), a profiles-only first cut of 2.6 (RLS test script), 2.7's two test accounts (Bob), and 1.7 (keep-alive).
+
 ## Steps
 
 | Step | Issue | Title | Label | Blocked by |
@@ -87,9 +105,9 @@ Done when: A stranger can understand and try FitIQ in two minutes.
 | 2.5 | #14 | Full v1 schema with constraints, ownership triggers, and RLS | `ready-for-agent` | #11, #2 |
 | 2.6 | #15 | Two-account RLS test script | `ready-for-agent` | #14 |
 | 2.7 | #16 | Create two test accounts and pass the RLS test | `ready-for-human` | #13, #15 |
-| 3.1 | #17 | Evaluate exercise data sources and licenses | `ready-for-agent` | None |
-| 3.2 | #18 | Repeatable exercise import script | `ready-for-agent` | #17, #14 |
-| 3.3 | #19 | Run the exercise import against the hosted project | `ready-for-human` | #18 |
+| 3.1 | #17 | Record the Free Exercise DB license and pin a dataset commit | `ready-for-agent` | None |
+| 3.2 | #18 | Exercise catalog client for the pinned Free Exercise DB | `ready-for-agent` | #17, #8 |
+| ~~3.3~~ | ~~#19~~ | ~~Run the exercise import against the hosted project~~ (dropped: no import in v1) |  |  |
 | 3.4 | #20 | Exercise search and filters | `ready-for-agent` | #18, #12 |
 | 3.5 | #21 | Exercise detail view with images and demo links | `ready-for-agent` | #20 |
 | 3.6 | #22 | Custom exercises | `ready-for-agent` | #20 |
@@ -123,4 +141,4 @@ Done when: A stranger can understand and try FitIQ in two minutes.
 
 ## Critical path
 
-0.2 → 1.4 / 1.5 → 1.6 → 2.1 → 2.2 → 2.5 → 2.6 → 2.7 gates everything that stores real data. 1.1, 3.1, and 0.2 can start immediately and in parallel.
+0.2 (done) → 1.4 / 1.5 → 1.6 → 2.1 → 2.2 → 2.5 → 2.6 → 2.7 gates everything that stores real data. 1.1 and 3.1 can start immediately and in parallel.
