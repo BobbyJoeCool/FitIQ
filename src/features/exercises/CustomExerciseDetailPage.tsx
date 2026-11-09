@@ -9,6 +9,7 @@ import { getMyCustomExercise, setCustomExerciseArchived } from '../../lib/data'
 import controls from '../../styles/controls.module.css'
 import { returnState } from '../../hooks/useReturnTo'
 import { useAuth } from '../auth/AuthContext'
+import { AddToPlan } from '../workout-plans/AddToPlan'
 
 export function CustomExerciseDetailPage() {
   const { id = '' } = useParams()
@@ -63,6 +64,7 @@ export function CustomExerciseDetailPage() {
             exercise={state.data}
             actions={
               <>
+                {!state.data.isArchived && <AddToPlan exercise={state.data} />}
                 <Link
                   to="edit"
                   state={returnState(location, state.data.name)}

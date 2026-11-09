@@ -10,6 +10,7 @@ const alex = { id: 'user-a', email: 'a@example.com' }
 
 beforeEach(() => {
   vi.mocked(data.onAuthChange).mockReturnValue(() => {})
+  vi.mocked(data.listMyPlans).mockResolvedValue([])
   vi.mocked(data.checkConnection).mockResolvedValue({ ok: true, serverTime: 'now' })
   vi.mocked(data.getMyProfile).mockResolvedValue(null)
 })

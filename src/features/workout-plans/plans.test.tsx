@@ -1,0 +1,369 @@
+import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as data from '../../lib/data'
+import type { Plan, PlanExercise, PlanWithExercises } from '../../lib/data'
+import { LIBRARY } from '../../test/exerciseFixtures'
+import { renderRoute } from '../../test/renderRoute'
+
+vi.mock('../../lib/data')
+
+const PLAN_ID = 'aaaaaaaa-0000-4000-8000-000000000001'
+
+const plan = (overrides: Partial<Plan> = {}): Plan => ({
+  id: PLAN_ID,
+  name: 'Push Day',
+  description: 'Chest, shoulders, triceps',
+  isArchived: false,
+  exerciseCount: 3,
+  updatedAt: '2026-11-09T00:00:00Z',
+  ...overrides,
+})
+
+const item = (id: string, overrides: Partial<PlanExercise> = {}): PlanExercise => ({
+  id,
+  planId: PLAN_ID,
+  exercise: { source: 'catalog', id: 'Barbell_Squat' },
+  sortOrder: 0,
+  targetSets: null,
+  targetReps: null,
+  restSeconds: null,
+  notes: null,
+  ...overrides,
+})
+
+const BUILDER: PlanWithExercises = {
+  ...plan(),
+  exercises: [
+    item('e1', {
+      targetSets: 3,
+      targetReps: '8-12',
+      restSeconds: 90,
+      notes: 'Pause at the bottom',
+    }),
+    item('e2', { exercise: { source: 'custom', id: LIBRARY[3].id }, sortOrder: 1 }),
+    item('e3', { exercise: { source: 'catalog', id: 'Renamed_Exercise' }, sortOrder: 2 }),
+  ],
+}
+
+const exerciseItems = () => within(screen.getByRole('list')).getAllByRole('listitem')
+const itemNames = () =>
+  exerciseItems().map((li) => li.querySelector('a, span[class*="itemName"]')?.textContent)
+
+beforeEach(() => {
+  vi.mocked(data.getCurrentUser).mockResolvedValue({ id: 'user-a', email: 'a@example.com' })
+  vi.mocked(data.onAuthChange).mockReturnValue(() => {})
+  vi.mocked(data.loadExerciseLibrary).mockResolvedValue(LIBRARY)
+  vi.mocked(data.getMyPlan).mockResolvedValue(structuredClone(BUILDER))
+  vi.mocked(data.listMyPlans).mockResolvedValue([])
+})
+
+describe('plans list', () => {
+  it('guides you to create a first plan', async () => {
+    renderRoute('/plans')
+    expect(await screen.findByText('No plans yet')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Create your first plan' })).toHaveAttribute(
+      'href',
+      '/plans/new',
+    )
+    expect(data.listMyPlans).toHaveBeenCalledWith('user-a')
+  })
+
+  it('lists plans with exercise counts and hides archived ones until asked', async () => {
+    vi.mocked(data.listMyPlans).mockResolvedValue([
+      plan({ exerciseCount: 1, description: null }),
+      plan({ id: 'p2', name: 'Old Legs', isArchived: true, exerciseCount: 4 }),
+    ])
+    const user = userEvent.setup()
+    renderRoute('/plans')
+
+    const push = await screen.findByRole('link', { name: /Push Day/ })
+    expect(push).toHaveAttribute('href', `/plans/${PLAN_ID}`)
+    expect(push).toHaveTextContent('1 exercise')
+    expect(screen.queryByText('Old Legs')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('checkbox', { name: 'Show archived (1)' }))
+    expect(screen.getByRole('link', { name: /Old Legs/ })).toHaveTextContent('Archived')
+  })
+
+  it('shows an error with a retry', async () => {
+    vi.mocked(data.listMyPlans).mockRejectedValueOnce(new Error('Network down'))
+    const user = userEvent.setup()
+    renderRoute('/plans')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Network down')
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByText('No plans yet')).toBeInTheDocument()
+  })
+})
+
+describe('plan form', () => {
+  it('validates before saving', async () => {
+    const user = userEvent.setup()
+    renderRoute('/plans/new')
+    await user.click(await screen.findByRole('button', { name: 'Create plan' }))
+    expect(screen.getByLabelText('Name')).toHaveAccessibleDescription(
+      'For example: Push day, or Monday full body. Give the plan a name.',
+    )
+    expect(data.createPlan).not.toHaveBeenCalled()
+  })
+
+  it('creates a plan, opens it, and Back skips the form', async () => {
+    vi.mocked(data.createPlan).mockResolvedValue(plan({ exerciseCount: 0 }))
+    const user = userEvent.setup()
+    const { router } = renderRoute('/plans')
+    await user.click(await screen.findByRole('link', { name: 'Create your first plan' }))
+    await user.type(await screen.findByLabelText('Name'), '  Push Day ')
+    await user.click(screen.getByRole('button', { name: 'Create plan' }))
+
+    expect(data.createPlan).toHaveBeenCalledWith({ name: 'Push Day', description: null })
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe(`/plans/${PLAN_ID}`))
+    await user.click(await screen.findByRole('link', { name: '← Plans' }))
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/plans'))
+  })
+
+  it('edits a plan and returns to it', async () => {
+    vi.mocked(data.updatePlan).mockResolvedValue()
+    const user = userEvent.setup()
+    const { router } = renderRoute(`/plans/${PLAN_ID}`)
+    await user.click(await screen.findByRole('link', { name: 'Edit details' }))
+    const name = await screen.findByLabelText('Name')
+    expect(name).toHaveValue('Push Day')
+    await user.clear(name)
+    await user.type(name, 'Push Day A')
+    await user.click(screen.getByRole('button', { name: 'Save changes' }))
+
+    expect(data.updatePlan).toHaveBeenCalledWith('user-a', PLAN_ID, {
+      name: 'Push Day A',
+      description: 'Chest, shoulders, triceps',
+    })
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe(`/plans/${PLAN_ID}`))
+    expect(router.state.historyAction).toBe('POP')
+  })
+})
+
+describe('plan builder', () => {
+  it('shows exercises in order with names, targets, and notes', async () => {
+    renderRoute(`/plans/${PLAN_ID}`)
+    expect(await screen.findByRole('heading', { name: 'Push Day' })).toBeInTheDocument()
+    expect(data.getMyPlan).toHaveBeenCalledWith('user-a', PLAN_ID)
+    expect(itemNames()).toEqual(['Barbell Squat', 'Walking Pad Incline Walk', 'Renamed Exercise'])
+
+    const [first, second, third] = exerciseItems()
+    expect(first).toHaveTextContent('3 × 8-12 · Rest 1:30')
+    expect(first).toHaveTextContent('Pause at the bottom')
+    expect(within(first).getByRole('link', { name: 'Barbell Squat' })).toHaveAttribute(
+      'href',
+      '/exercises/Barbell_Squat',
+    )
+    expect(second).toHaveTextContent('No targets yet')
+    // An ID that isn't in the pinned catalog still shows, readably.
+    expect(third).toHaveTextContent('Details unavailable')
+    expect(within(third).queryByRole('link')).not.toBeInTheDocument()
+  })
+
+  it('still shows the plan when the exercise library fails to load', async () => {
+    vi.mocked(data.loadExerciseLibrary).mockRejectedValue(new Error('CDN down'))
+    renderRoute(`/plans/${PLAN_ID}`)
+    expect(await screen.findByText(/Exercise details couldn't load/)).toBeInTheDocument()
+    expect(itemNames()).toEqual(['Barbell Squat', 'Custom exercise', 'Renamed Exercise'])
+  })
+
+  it('edits targets with validation', async () => {
+    vi.mocked(data.updatePlanExercise).mockImplementation(async (_user, id, targets) => ({
+      ...BUILDER.exercises[1],
+      id,
+      ...targets,
+    }))
+    const user = userEvent.setup()
+    renderRoute(`/plans/${PLAN_ID}`)
+    await user.click(
+      await screen.findByRole('button', { name: 'Edit targets for Walking Pad Incline Walk' }),
+    )
+    const editor = screen.getByRole('form', { name: 'Targets for Walking Pad Incline Walk' })
+    await user.type(within(editor).getByLabelText('Sets'), '0')
+    await user.click(within(editor).getByRole('button', { name: 'Save targets' }))
+    expect(within(editor).getByLabelText('Sets')).toHaveAccessibleDescription(
+      'Use a whole number from 1 to 20.',
+    )
+    expect(data.updatePlanExercise).not.toHaveBeenCalled()
+
+    await user.clear(within(editor).getByLabelText('Sets'))
+    await user.type(within(editor).getByLabelText('Sets'), '3')
+    await user.type(within(editor).getByLabelText('Reps'), '30 s')
+    await user.type(within(editor).getByLabelText('Rest (sec)'), '45')
+    await user.click(within(editor).getByRole('button', { name: 'Save targets' }))
+
+    expect(data.updatePlanExercise).toHaveBeenCalledWith('user-a', 'e2', {
+      targetSets: 3,
+      targetReps: '30 s',
+      restSeconds: 45,
+      notes: null,
+    })
+    expect(await screen.findByText('3 × 30 s · Rest 45 s')).toBeInTheDocument()
+    expect(screen.queryByRole('form')).not.toBeInTheDocument()
+  })
+
+  it('moves exercises and saves the order', async () => {
+    vi.mocked(data.reorderPlanExercises).mockResolvedValue()
+    const user = userEvent.setup()
+    renderRoute(`/plans/${PLAN_ID}`)
+    expect(await screen.findByRole('button', { name: 'Move Barbell Squat up' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Move Renamed Exercise down' })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Move Barbell Squat down' }))
+    expect(itemNames()).toEqual(['Walking Pad Incline Walk', 'Barbell Squat', 'Renamed Exercise'])
+    expect(data.reorderPlanExercises).toHaveBeenCalledWith(PLAN_ID, ['e2', 'e1', 'e3'])
+    expect(await screen.findByText('Moved Barbell Squat to position 2 of 3.')).toBeInTheDocument()
+  })
+
+  it('puts the order back if saving it fails', async () => {
+    vi.mocked(data.reorderPlanExercises).mockRejectedValue(new Error('Offline'))
+    const user = userEvent.setup()
+    renderRoute(`/plans/${PLAN_ID}`)
+    await user.click(await screen.findByRole('button', { name: 'Move Renamed Exercise up' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Offline')
+    expect(itemNames()).toEqual(['Barbell Squat', 'Walking Pad Incline Walk', 'Renamed Exercise'])
+  })
+
+  it('removes an exercise after confirming', async () => {
+    vi.mocked(data.removePlanExercise).mockResolvedValue()
+    const user = userEvent.setup()
+    renderRoute(`/plans/${PLAN_ID}`)
+    await user.click(await screen.findByRole('button', { name: 'Remove Barbell Squat' }))
+    await user.click(screen.getByRole('button', { name: 'Keep' }))
+    expect(data.removePlanExercise).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Remove Barbell Squat' }))
+    const confirm = screen.getByRole('group', { name: 'Remove Barbell Squat?' })
+    await user.click(within(confirm).getByRole('button', { name: 'Remove' }))
+    expect(data.removePlanExercise).toHaveBeenCalledWith('user-a', 'e1')
+    await vi.waitFor(() =>
+      expect(itemNames()).toEqual(['Walking Pad Incline Walk', 'Renamed Exercise']),
+    )
+  })
+
+  it('archives and restores the plan', async () => {
+    vi.mocked(data.setPlanArchived).mockResolvedValue()
+    const user = userEvent.setup()
+    renderRoute(`/plans/${PLAN_ID}`)
+    await user.click(await screen.findByRole('button', { name: 'Archive' }))
+    expect(data.setPlanArchived).toHaveBeenCalledWith('user-a', PLAN_ID, true)
+    expect(await screen.findByText(/Archived plans are hidden from your list/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Restore' }))
+    expect(data.setPlanArchived).toHaveBeenLastCalledWith('user-a', PLAN_ID, false)
+    expect(await screen.findByRole('button', { name: 'Archive' })).toBeInTheDocument()
+  })
+
+  it('guides an empty plan to add exercises', async () => {
+    vi.mocked(data.getMyPlan).mockResolvedValue({ ...BUILDER, exercises: [] })
+    renderRoute(`/plans/${PLAN_ID}`)
+    expect(await screen.findByText('No exercises yet')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Add exercises' })).toHaveAttribute(
+      'href',
+      `/plans/${PLAN_ID}/add`,
+    )
+  })
+
+  it("treats another user's or a missing plan as not found", async () => {
+    vi.mocked(data.getMyPlan).mockResolvedValue(null)
+    renderRoute('/plans/someone-elses')
+    expect(await screen.findByText('Plan not found')).toBeInTheDocument()
+  })
+
+  it('links to an exercise and back to the plan', async () => {
+    vi.mocked(data.getCatalogExercise).mockResolvedValue(LIBRARY[0])
+    const user = userEvent.setup()
+    const { router } = renderRoute(`/plans/${PLAN_ID}`)
+    await user.click(await screen.findByRole('link', { name: 'Barbell Squat' }))
+    await user.click(await screen.findByRole('link', { name: '← Push Day' }))
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe(`/plans/${PLAN_ID}`))
+  })
+})
+
+describe('add exercises to a plan', () => {
+  it('searches the library and adds exercises', async () => {
+    vi.mocked(data.addExerciseToPlan).mockResolvedValue(item('new'))
+    const user = userEvent.setup()
+    const { router } = renderRoute(`/plans/${PLAN_ID}`)
+    await user.click(await screen.findByRole('link', { name: 'Add exercises' }))
+    await screen.findByRole('heading', { name: 'Add exercises' })
+
+    // Archived custom exercises stay out; exercises already in the plan say so.
+    expect(screen.queryByText('Old Band Pull')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add again: Barbell Squat' })).toBeInTheDocument()
+
+    await user.type(screen.getByRole('searchbox'), 'bench')
+    expect(screen.getByText('1 exercises')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add: Dumbbell Bench Press' }))
+    expect(data.addExerciseToPlan).toHaveBeenCalledWith('user-a', PLAN_ID, {
+      source: 'catalog',
+      id: 'Dumbbell_Bench_Press',
+    })
+    expect(await screen.findByText('Added')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('link', { name: 'Done (1 added)' }))
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe(`/plans/${PLAN_ID}`))
+    expect(router.state.historyAction).toBe('POP')
+  })
+
+  it('adds a custom exercise by its ID', async () => {
+    vi.mocked(data.addExerciseToPlan).mockResolvedValue(item('new'))
+    const user = userEvent.setup()
+    renderRoute(`/plans/${PLAN_ID}/add`)
+    await user.type(await screen.findByRole('searchbox'), 'walking')
+    await user.click(screen.getByRole('button', { name: /Walking Pad Incline Walk/ }))
+    expect(data.addExerciseToPlan).toHaveBeenCalledWith('user-a', PLAN_ID, {
+      source: 'custom',
+      id: LIBRARY[3].id,
+    })
+  })
+})
+
+describe('add to plan from an exercise', () => {
+  it('lists active plans and adds the exercise', async () => {
+    vi.mocked(data.getCatalogExercise).mockResolvedValue(LIBRARY[0])
+    vi.mocked(data.listMyPlans).mockResolvedValue([
+      plan(),
+      plan({ id: 'p2', name: 'Old Legs', isArchived: true }),
+    ])
+    vi.mocked(data.addExerciseToPlan).mockResolvedValue(item('new'))
+    const user = userEvent.setup()
+    renderRoute('/exercises/Barbell_Squat')
+
+    await user.click(await screen.findByRole('button', { name: 'Add to plan' }))
+    const choices = await screen.findByRole('list', { name: 'Add Barbell Squat to:' })
+    expect(within(choices).getAllByRole('button')).toHaveLength(1)
+    await user.click(within(choices).getByRole('button', { name: /Push Day/ }))
+
+    expect(data.addExerciseToPlan).toHaveBeenCalledWith('user-a', PLAN_ID, {
+      source: 'catalog',
+      id: 'Barbell_Squat',
+    })
+    expect(await screen.findByRole('status')).toHaveTextContent('Added to Push Day.')
+    expect(within(choices).getByRole('button', { name: /Push Day/ })).toHaveTextContent(
+      '4 exercises',
+    )
+    expect(screen.getByRole('link', { name: 'Open plan' })).toHaveAttribute(
+      'href',
+      `/plans/${PLAN_ID}`,
+    )
+  })
+
+  it('offers to create a plan when there are none', async () => {
+    vi.mocked(data.getCatalogExercise).mockResolvedValue(LIBRARY[0])
+    const user = userEvent.setup()
+    renderRoute('/exercises/Barbell_Squat')
+    await user.click(await screen.findByRole('button', { name: 'Add to plan' }))
+    expect(await screen.findByRole('link', { name: 'Create a plan' })).toHaveAttribute(
+      'href',
+      '/plans/new',
+    )
+  })
+
+  it('is not offered on an archived custom exercise', async () => {
+    vi.mocked(data.getMyCustomExercise).mockResolvedValue(LIBRARY[4])
+    renderRoute(`/exercises/custom/${LIBRARY[4].id}`)
+    await screen.findByRole('heading', { name: 'Old Band Pull' })
+    expect(screen.queryByRole('button', { name: 'Add to plan' })).not.toBeInTheDocument()
+  })
+})

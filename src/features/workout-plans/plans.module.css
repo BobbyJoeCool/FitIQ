@@ -1,0 +1,330 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.header h1 {
+  margin: 0;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: inherit;
+  text-decoration: none;
+}
+
+.card:hover {
+  border-color: var(--color-primary);
+}
+
+.cardTitle {
+  font-weight: var(--font-weight-semibold);
+}
+
+.cardMeta {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.clamp {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.badge {
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning);
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-target);
+}
+
+/* Plan builder */
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.titleRow h1 {
+  margin: 0;
+}
+
+.description {
+  margin: var(--space-2) 0 0;
+  white-space: pre-wrap;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 var(--space-5);
+}
+
+.sectionHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.sectionHeader h2 {
+  margin: 0;
+}
+
+.exercises {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.itemMain {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.position {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-semibold);
+}
+
+.itemBody {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.itemName {
+  font-weight: var(--font-weight-semibold);
+}
+
+.notes {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: var(--font-size-sm);
+}
+
+.itemActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.iconButton {
+  min-width: var(--tap-target);
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-lg);
+}
+
+.editor {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.editorRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+.confirm p {
+  flex: 1 1 12rem;
+  margin: 0;
+}
+
+.danger {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger);
+}
+
+/* Forms */
+
+.form {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 640px;
+}
+
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Exercise picker */
+
+.filters {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.filterRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.pickRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.pickInfo {
+  display: grid;
+  min-width: 0;
+}
+
+.pickAction {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.added {
+  color: var(--color-success);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.stickyDone {
+  position: sticky;
+  bottom: calc(var(--bottom-nav-height) + var(--space-2));
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-4);
+}
+
+@media (min-width: 900px) {
+  .stickyDone {
+    bottom: var(--space-4);
+  }
+}
+
+/* Add to plan (exercise detail) */
+
+.panel {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.panel p {
+  margin: 0;
+}
+
+.planChoices {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.planChoice {
+  justify-content: space-between;
+  width: 100%;
+  text-align: left;
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-4);
+}
