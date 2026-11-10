@@ -3,7 +3,7 @@
 A private workout and progress tracker for a household of 2 to 4 people. Plan your routines, log every set on your phone as you go, and watch your weight, measurements, and lifts change over time. It's installable as an app, and costs $0 a month to run.
 
 <p align="center">
-  <img src="docs/screenshots/demo.gif" alt="Starting Leg Day from the dashboard, logging two sets with the rest timer, and moving to the next exercise" width="300" />
+  <img src="docs/screenshots/demo.gif" alt="Choosing Leg Day from the dashboard, logging two sets with the rest timer, moving to the next exercise, and opening Progress" width="300" />
 </p>
 
 | Dashboard | Logging a set | Weight trend | Exercise library | Plan builder |
@@ -32,6 +32,7 @@ React, TypeScript, and Vite on GitHub Pages. The browser talks straight to Supab
 
 ## Docs
 
+- [`CHANGELOG.md`](CHANGELOG.md): what's in v1.0, what's being fixed now, and what's planned next
 - [`docs/architecture.md`](docs/architecture.md): how the pieces fit, with a diagram
 - [`plan.md`](plan.md): product and technical plan
 - [`docs/build-plan.md`](docs/build-plan.md): phased build plan, one GitHub issue per step (tracked in [#1](https://github.com/BobbyJoeCool/FitIQ/issues/1))

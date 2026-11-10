@@ -30,6 +30,8 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 | FV-5 | [Import the exercise catalog into Postgres](#fv-5-import-the-exercise-catalog-into-postgres) | Idea | None |
 | FV-6 | [Delete plans that no workout uses](#fv-6-delete-plans-that-no-workout-uses) | Idea | Phase 5 sessions |
 | FV-7 | [Programs: training by day, by rotation or weekly schedule](#fv-7-programs-training-by-day-by-rotation-or-weekly-schedule) | Proposed | Phase 4 (done); best before Phase 5 and 6.5 |
+| FV-9 | [Email sender on bobbyjoecool.dev](#fv-9-email-sender-on-bobbyjoecooldev) | Proposed | None |
+| FV-10 | [Cardio in workout plans](#fv-10-cardio-in-workout-plans) | Proposed | Phases 4, 5 and 7 (done) |
 | FV-8 | [Not planned: nutrition, wearables, AI plans, native apps](#fv-8-not-planned) | Not planned | None |
 
 ## Upgrades
@@ -291,6 +293,35 @@ Both modes:
 **Screens:** a **Programs** section on the Plans screen (create, choose mode, order or pin days, set active), and the dashboard card from 6.5.
 
 - **Depends on:** Phase 4 (done). The session link needs Phase 5's `workout_sessions` (2.5, #14). **Ideally decide before Phase 5.1 and 6.5**, since both touch how a workout is started and what "today's planned workout" means. If v1 ships without it, 6.5 should use the fallback above.
+
+### FV-9. Email sender on bobbyjoecool.dev
+
+- **Status:** Proposed (requested 2026-11-10)
+- **Why:** Supabase's built-in email only reaches the Supabase team's own addresses, at 2 an hour, so v1 runs with no email (option A in `docs/accounts.md`): the owner creates each account with a temporary password and resets forgotten ones by hand. With a real sender, family members get an invite link and can reset their own password from the sign-in screen.
+- **What:**
+  - Send FitIQ's auth email from a `bobbyjoecool.dev` address (for example `fitiq@bobbyjoecool.dev`) through an SMTP provider with a free tier, such as Resend or Brevo.
+  - DNS on `bobbyjoecool.dev`: the provider's SPF and DKIM records, plus a DMARC record, so the mail isn't marked as spam.
+  - Supabase → Authentication → SMTP settings pointed at the provider. The invite and reset templates in `supabase/templates/` and the `/auth/confirm` flow already exist (step 2.4), so no app code changes are expected.
+  - Update `docs/accounts.md` to make option B the default, and test invite, reset, and expired-link handling on the live site.
+- **Depends on:** none. SMTP is a standard setting, so it carries over to a self-hosted backend (FV-3).
+- **Data and security:** no schema change. The SMTP password lives only in the Supabase dashboard and the owner's password manager, never in the repo. Rate limits on reset emails stay on.
+- **Source:** Bob, 2026-11-10.
+
+### FV-10. Cardio in workout plans
+
+- **Status:** Proposed (requested 2026-11-10)
+- **Why:** a real session often mixes lifting and cardio, like a 10-minute walking pad warm-up before Leg Day or a bike finisher. Today cardio lives on its own Cardio tab. Catalog cardio exercises can go into a plan and are logged in the workout as time and distance sets, but the plan can't hold a cardio target, there's no walking pad preset or incline, and those sets never show up on the Cardio tab or in its weekly totals.
+- **What:**
+  - A plan can include a **cardio item**: an activity (walking pad, walk, run, bike, and so on, the same list as the Cardio tab) with target minutes, and optionally distance and incline. It sits in the plan's order like any exercise, so it can be a warm-up, in the middle, or a finisher.
+  - In the workout, the cardio item shows its target and a timer, with the walking pad preset filling minutes, incline, and distance unit. Completing it saves one entry.
+  - That entry counts everywhere cardio counts: the Cardio tab's history and weekly tiles, the dashboard's Recent cardio, and the cardio CSV, linked back to the workout it came from. It isn't counted twice.
+  - The workout's finish review and detail page show the cardio item with its time and distance.
+- **Depends on:** Phase 4 plans, Phase 5 workouts, Phase 7 cardio (all done).
+- **Data and security** (a sketch, to settle when it's scheduled):
+  - `workout_plan_exercises` gains a way to hold a cardio item and its targets (for example `cardio_activity`, `target_minutes`, `target_distance`, `target_incline`, with CHECKs that it's either an exercise or a cardio item).
+  - `cardio_sessions` gains a nullable `workout_session_id` (set null if the workout is deleted), so a cardio entry made in a workout is the single record, rather than a set plus a separate cardio row.
+  - RLS is unchanged in shape, since both tables are owner-only. The ownership trigger must make sure the linked workout belongs to the same user, and the RLS test gets the cross-parent check. ADR 0001 notes what happens to the cardio entry when its workout is deleted.
+- **Source:** Bob, 2026-11-10.
 
 ### FV-8. Not planned
 
