@@ -11,6 +11,8 @@ export interface SessionSet {
   reps: number | null
   weightValue: number | null
   weightUnit: WeightUnit | null
+  /** The load is body weight; weightValue is then added weight, or null. */
+  isBodyweight: boolean
   durationSeconds: number | null
   distanceValue: number | null
   distanceUnit: DistanceUnit | null
@@ -23,6 +25,8 @@ export interface SetInput {
   reps: number | null
   weightValue: number | null
   weightUnit: WeightUnit | null
+  /** Body weight, plus weightValue as added weight if set. */
+  isBodyweight: boolean
   durationSeconds: number | null
   distanceValue: number | null
   distanceUnit: DistanceUnit | null
@@ -67,6 +71,7 @@ interface SetRow {
   reps: number | null
   weight_value: number | string | null
   weight_unit: WeightUnit | null
+  is_bodyweight: boolean
   duration_seconds: number | null
   distance_value: number | string | null
   distance_unit: DistanceUnit | null
@@ -103,7 +108,7 @@ interface SessionRow {
 }
 
 const SET_COLUMNS =
-  'id, session_exercise_id, set_number, reps, weight_value, weight_unit, duration_seconds, distance_value, distance_unit, notes, completed_at'
+  'id, session_exercise_id, set_number, reps, weight_value, weight_unit, is_bodyweight, duration_seconds, distance_value, distance_unit, notes, completed_at'
 const EXERCISE_COLUMNS =
   'id, session_id, catalog_exercise_id, custom_exercise_id, exercise_name, sort_order, is_skipped, notes, target_sets, target_reps, target_seconds, target_release_seconds, per_side, rest_seconds'
 const SESSION_COLUMNS = 'id, name, plan_id, started_at, completed_at, notes'
@@ -120,6 +125,7 @@ function setFromRow(row: SetRow): SessionSet {
     reps: row.reps,
     weightValue: num(row.weight_value),
     weightUnit: row.weight_unit,
+    isBodyweight: row.is_bodyweight ?? false,
     durationSeconds: row.duration_seconds,
     distanceValue: num(row.distance_value),
     distanceUnit: row.distance_unit,
@@ -169,6 +175,7 @@ function setToRow(input: SetInput) {
     reps: input.reps,
     weight_value: input.weightValue,
     weight_unit: input.weightValue === null ? null : input.weightUnit,
+    is_bodyweight: input.isBodyweight,
     duration_seconds: input.durationSeconds,
     distance_value: input.distanceValue,
     distance_unit: input.distanceValue === null ? null : input.distanceUnit,

@@ -5,6 +5,7 @@ import { makeExercise } from '../../test/exerciseFixtures'
 import {
   formatElapsed,
   formatSet,
+  isBodyweightExercise,
   nextSetDefaults,
   repsFromTarget,
   secondsBetween,
@@ -19,6 +20,7 @@ const set = (overrides: Partial<SessionSet>): SessionSet => ({
   reps: null,
   weightValue: null,
   weightUnit: null,
+  isBodyweight: false,
   durationSeconds: null,
   distanceValue: null,
   distanceUnit: null,
@@ -47,6 +49,16 @@ describe('formatSet', () => {
       '1.25 mi · 12:00',
     )
     expect(formatSet(set({ reps: 5, weightValue: 61.25, weightUnit: 'kg' }))).toBe('5 × 61.25 kg')
+  })
+
+  it('shows bodyweight sets as Body, plus any added weight', () => {
+    expect(formatSet(set({ reps: 10, isBodyweight: true }))).toBe('10 × Body')
+    expect(formatSet(set({ reps: 8, isBodyweight: true, weightValue: 25, weightUnit: 'lb' }))).toBe(
+      '8 × Body + 25 lb',
+    )
+    expect(formatSet(set({ reps: 8, isBodyweight: true, weightValue: 0, weightUnit: 'lb' }))).toBe(
+      '8 × Body',
+    )
   })
 })
 
@@ -82,6 +94,8 @@ describe('sessionTotals', () => {
             set({ reps: 10, weightValue: 100, weightUnit: 'lb' }),
             set({ reps: 5, weightValue: 50, weightUnit: 'kg' }),
             set({ durationSeconds: 30 }),
+            // Bodyweight: added weight alone would understate the load, so it's left out.
+            set({ reps: 8, isBodyweight: true, weightValue: 25, weightUnit: 'lb' }),
           ],
         },
         {
@@ -107,7 +121,7 @@ describe('sessionTotals', () => {
       ],
     }
     const totals = sessionTotals(session, 'lb')
-    expect(totals).toMatchObject({ setCount: 3, exercisesWithSets: 1, skipped: 1, notLogged: 1 })
+    expect(totals).toMatchObject({ setCount: 4, exercisesWithSets: 1, skipped: 1, notLogged: 1 })
     expect(totals.volume).toBeCloseTo(1000 + 5 * 50 * 2.2046226218, 3)
   })
 })
@@ -141,5 +155,15 @@ describe('next set defaults', () => {
     expect(
       nextSetDefaults(undefined, undefined, { ...NO_TARGETS, targetSeconds: 30 }, 'lb'),
     ).toMatchObject({ durationSeconds: 30, reps: null })
+  })
+
+  it('defaults to body weight for body-only exercises, then follows the last set', () => {
+    expect(isBodyweightExercise(makeExercise({ equipment: 'body only' }))).toBe(true)
+    expect(isBodyweightExercise(makeExercise({ equipment: 'barbell' }))).toBe(false)
+    expect(nextSetDefaults(undefined, undefined, NO_TARGETS, 'lb', true).isBodyweight).toBe(true)
+    const weighted = set({ reps: 8, isBodyweight: false, weightValue: 25, weightUnit: 'lb' })
+    expect(nextSetDefaults(weighted, undefined, NO_TARGETS, 'lb', true).isBodyweight).toBe(false)
+    const body = set({ reps: 8, isBodyweight: true })
+    expect(nextSetDefaults(undefined, [body], NO_TARGETS, 'lb', false).isBodyweight).toBe(true)
   })
 })

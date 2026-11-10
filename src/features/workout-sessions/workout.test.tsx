@@ -18,6 +18,7 @@ const set = (overrides: Partial<SessionSet>): SessionSet => ({
   reps: null,
   weightValue: null,
   weightUnit: null,
+  isBodyweight: false,
   durationSeconds: null,
   distanceValue: null,
   distanceUnit: null,
@@ -177,6 +178,7 @@ describe('logging sets', () => {
       reps: 8,
       weightValue: 140,
       weightUnit: 'lb',
+      isBodyweight: false,
       durationSeconds: null,
       distanceValue: null,
       distanceUnit: 'mi',
@@ -196,6 +198,58 @@ describe('logging sets', () => {
     await user.click(within(next).getByRole('button', { name: 'Skip rest' }))
     expect(within(next).queryByRole('timer', { name: 'Rest timer' })).not.toBeInTheDocument()
     expect(within(next).getByRole('button', { name: 'Complete set' })).toBeEnabled()
+  })
+
+  it('logs a bodyweight set, defaulting to Body for body-only exercises', async () => {
+    vi.mocked(data.loadExerciseLibrary).mockResolvedValue([
+      makeExercise({ id: 'Pullups', name: 'Pullups', equipment: 'body only' }),
+    ])
+    vi.mocked(data.getInProgressSession).mockResolvedValue({
+      ...structuredClone(SESSION),
+      exercises: [
+        item('x1', {
+          exercise: { source: 'catalog', id: 'Pullups' },
+          exerciseName: 'Pullups',
+          targets: { ...NO_TARGETS, targetSets: 3, targetReps: '8' },
+        }),
+      ],
+    })
+    vi.mocked(data.saveSet).mockImplementation(async (exerciseId, setNumber, input) =>
+      set({ ...input, sessionExerciseId: exerciseId, setNumber }),
+    )
+    const user = userEvent.setup()
+    renderRoute('/workout')
+    const form = await screen.findByRole('form', { name: 'Set 1 of 3' })
+    expect(within(form).getByRole('checkbox', { name: 'Body weight' })).toBeChecked()
+    await user.type(within(form).getByLabelText('Added weight (lb, optional)'), '25')
+    await user.click(within(form).getByRole('button', { name: 'Complete set' }))
+    expect(data.saveSet).toHaveBeenCalledWith(
+      'x1',
+      1,
+      expect.objectContaining({ reps: 8, isBodyweight: true, weightValue: 25 }),
+    )
+    expect(await screen.findByRole('list', { name: 'Sets done' })).toHaveTextContent(
+      '8 × Body + 25 lb',
+    )
+  })
+
+  it('clears the weight when switching a set to body weight', async () => {
+    vi.mocked(data.getExerciseHistory).mockResolvedValue([
+      {
+        sessionId: 'old',
+        exerciseName: 'Barbell Squat',
+        sessionName: 'Leg Day',
+        startedAt: '2026-11-02T10:00:00Z',
+        sets: [set({ reps: 8, weightValue: 135, weightUnit: 'lb' })],
+      },
+    ])
+    const user = userEvent.setup()
+    renderRoute('/workout')
+    const form = await screen.findByRole('form', { name: 'Set 1 of 3' })
+    expect(within(form).getByRole('checkbox', { name: 'Body weight' })).not.toBeChecked()
+    expect(within(form).getByLabelText('Weight (lb)')).toHaveValue('135')
+    await user.click(within(form).getByRole('checkbox', { name: 'Body weight' }))
+    expect(within(form).getByLabelText('Added weight (lb, optional)')).toHaveValue('')
   })
 
   it('keeps what was typed when a save fails', async () => {

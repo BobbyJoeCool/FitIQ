@@ -234,6 +234,18 @@ export function SetForm({
       <div className={styles.fields}>
         {mode === 'strength' && (
           <>
+            <label className={`${styles.checkbox} ${styles.wide}`}>
+              <input
+                type="checkbox"
+                checked={fields.bodyweight}
+                // Switching to body weight clears the barbell-style weight; any added weight is typed fresh.
+                onChange={(e) => {
+                  const bodyweight = e.target.checked
+                  setFields((f) => ({ ...f, bodyweight, weight: bodyweight ? '' : f.weight }))
+                }}
+              />
+              Body weight
+            </label>
             <Stepper
               label="Reps"
               value={fields.reps}
@@ -242,7 +254,11 @@ export function SetForm({
               onChange={set('reps')}
             />
             <Stepper
-              label={`Weight (${weightUnit})`}
+              label={
+                fields.bodyweight
+                  ? `Added weight (${weightUnit}, optional)`
+                  : `Weight (${weightUnit})`
+              }
               value={fields.weight}
               step={weightUnit === 'lb' ? 5 : 2.5}
               inputMode="decimal"

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseSet, toFields } from './setFields'
 
-const blank = { reps: '', weight: '', seconds: '', minutes: '', distance: '' }
+const blank = { reps: '', weight: '', seconds: '', minutes: '', distance: '', bodyweight: false }
 
 describe('parseSet', () => {
   it('reads strength sets, with weight optional', () => {
@@ -11,6 +11,7 @@ describe('parseSet', () => {
         reps: 8,
         weightValue: 135,
         weightUnit: 'lb',
+        isBodyweight: false,
         durationSeconds: null,
         distanceValue: null,
         distanceUnit: 'mi',
@@ -54,11 +55,35 @@ describe('parseSet', () => {
         reps: 8,
         weightValue: 61.25,
         weightUnit: 'kg',
+        isBodyweight: true,
         durationSeconds: 90,
         distanceValue: null,
         distanceUnit: null,
         notes: null,
       }),
-    ).toEqual({ reps: '8', weight: '61.25', seconds: '90', minutes: '1.5', distance: '' })
+    ).toEqual({
+      reps: '8',
+      weight: '61.25',
+      seconds: '90',
+      minutes: '1.5',
+      distance: '',
+      bodyweight: true,
+    })
+  })
+
+  it('reads bodyweight sets, with added weight optional', () => {
+    expect(
+      parseSet('strength', { ...blank, reps: '10', bodyweight: true }, 'lb', 'mi'),
+    ).toMatchObject({ ok: true, value: { reps: 10, isBodyweight: true, weightValue: null } })
+    expect(
+      parseSet('strength', { ...blank, reps: '8', weight: '25', bodyweight: true }, 'lb', 'mi'),
+    ).toMatchObject({ ok: true, value: { reps: 8, isBodyweight: true, weightValue: 25 } })
+    // Only strength sets can be bodyweight.
+    expect(
+      parseSet('timed', { ...blank, seconds: '30', bodyweight: true }, 'lb', 'mi'),
+    ).toMatchObject({
+      ok: true,
+      value: { isBodyweight: false },
+    })
   })
 })

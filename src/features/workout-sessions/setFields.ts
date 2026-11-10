@@ -9,6 +9,8 @@ export interface SetFields {
   seconds: string
   minutes: string
   distance: string
+  /** The load is body weight; weight is then added weight (optional). */
+  bodyweight: boolean
 }
 
 const text = (n: number | null | undefined) => (n === null || n === undefined ? '' : String(n))
@@ -22,6 +24,7 @@ export function toFields(input: SetInput): SetFields {
       ? String(Math.round((input.durationSeconds / 60) * 100) / 100)
       : '',
     distance: text(input.distanceValue),
+    bodyweight: input.isBodyweight,
   }
 }
 
@@ -68,6 +71,7 @@ export function parseSet(
     reps: (mode === 'strength' || (mode === 'timed' && holdsAsReps)) && reps ? Number(reps) : null,
     weightValue: mode === 'strength' && weight ? Number(weight) : null,
     weightUnit,
+    isBodyweight: mode === 'strength' && f.bodyweight,
     durationSeconds,
     distanceValue: mode === 'cardio' && distance ? Number(distance) : null,
     distanceUnit,

@@ -18,7 +18,13 @@ import { useAuth } from '../auth/AuthContext'
 import { exercisePath } from '../exercises/paths'
 import { formatTargets } from '../workout-plans/format'
 import { SetForm } from './SetForm'
-import { formatDateTime, formatSet, nextSetDefaults, setModeFor } from './workoutMath'
+import {
+  formatDateTime,
+  formatSet,
+  isBodyweightExercise,
+  nextSetDefaults,
+  setModeFor,
+} from './workoutMath'
 import styles from './workout.module.css'
 
 /** The current exercise in a workout: last time, sets done, and the next set. */
@@ -172,7 +178,13 @@ export function ExerciseLogger({
           key={`${item.id}:${nextNumber}`}
           mode={mode}
           title={title}
-          initial={nextSetDefaults(sets.at(-1), lastTime?.sets, item.targets, weightUnit)}
+          initial={nextSetDefaults(
+            sets.at(-1),
+            lastTime?.sets,
+            item.targets,
+            weightUnit,
+            isBodyweightExercise(exercise),
+          )}
           weightUnit={weightUnit}
           distanceUnit={distanceUnit}
           showTimer
