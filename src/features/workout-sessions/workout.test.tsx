@@ -259,6 +259,73 @@ describe('logging sets', () => {
     })
     expect(within(form).getByRole('timer')).toHaveAccessibleName('Done')
   })
+
+  it('follows the Seconds field and the Each side toggle', async () => {
+    const user = userEvent.setup()
+    renderRoute(`/workout?exercise=x2`)
+    const form = await screen.findByRole('form', { name: 'Set 1 of 1' })
+    const seconds = within(form).getByLabelText('Seconds (each side)')
+    await user.clear(seconds)
+    await user.type(seconds, '45')
+    expect(within(form).getByRole('timer')).toHaveAccessibleName('45 s each side')
+
+    await user.click(within(form).getByRole('checkbox', { name: 'Each side (left and right)' }))
+    expect(within(form).getByLabelText('Seconds')).toHaveValue('45')
+    expect(within(form).getByRole('timer')).toHaveAccessibleName('45 s hold')
+
+    await user.clear(within(form).getByLabelText('Seconds'))
+    expect(within(form).getByRole('button', { name: 'Start timer' })).toBeDisabled()
+  })
+
+  it('runs repeated holds with a release, and logs the holds as reps', async () => {
+    vi.mocked(data.getInProgressSession).mockResolvedValue({
+      ...structuredClone(SESSION),
+      exercises: [
+        item('x1', {
+          exercise: { source: 'catalog', id: 'Hamstring_Stretch' },
+          exerciseName: 'Ab Roller',
+          targets: {
+            ...NO_TARGETS,
+            targetSets: 1,
+            targetReps: '2',
+            targetSeconds: 10,
+            targetReleaseSeconds: 5,
+          },
+        }),
+      ],
+    })
+    vi.mocked(data.saveSet).mockImplementation(async (exerciseId, setNumber, input) =>
+      set({ ...input, sessionExerciseId: exerciseId, setNumber }),
+    )
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderRoute('/workout')
+    const form = await screen.findByRole('form', { name: 'Set 1 of 1' })
+    expect(within(form).getByLabelText('Reps (holds)')).toHaveValue('2')
+    expect(within(form).getByRole('timer')).toHaveAccessibleName('2 × 10 s hold, 5 s release')
+
+    await user.click(within(form).getByRole('button', { name: 'Start timer' }))
+    expect(within(form).getByRole('timer')).toHaveAccessibleName('Hold · 1 of 2')
+    await act(async () => {
+      vi.advanceTimersByTime(10_500)
+    })
+    expect(within(form).getByRole('timer')).toHaveAccessibleName('Release')
+    await act(async () => {
+      vi.advanceTimersByTime(5_500)
+    })
+    expect(within(form).getByRole('timer')).toHaveAccessibleName('Hold · 2 of 2')
+    await act(async () => {
+      vi.advanceTimersByTime(10_500)
+    })
+    expect(within(form).getByRole('timer')).toHaveAccessibleName('Done')
+
+    await user.click(within(form).getByRole('button', { name: 'Complete set' }))
+    expect(data.saveSet).toHaveBeenCalledWith(
+      'x1',
+      1,
+      expect.objectContaining({ reps: 2, durationSeconds: 10, weightValue: null }),
+    )
+  })
 })
 
 describe('finishing', () => {

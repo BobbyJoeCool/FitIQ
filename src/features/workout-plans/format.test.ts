@@ -42,4 +42,17 @@ describe('hold targets', () => {
       '3 × 10 each side',
     )
   })
+
+  it('formats repeated holds with a release', () => {
+    expect(
+      formatTargets({
+        ...NO_TARGETS,
+        targetSets: 3,
+        targetReps: '5',
+        targetSeconds: 10,
+        targetReleaseSeconds: 5,
+        restSeconds: 60,
+      }),
+    ).toBe('3 × 5 × 10 s hold · Release 5 s · Rest 1:00')
+  })
 })

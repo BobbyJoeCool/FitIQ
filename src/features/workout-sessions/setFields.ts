@@ -34,6 +34,8 @@ export function parseSet(
   f: SetFields,
   weightUnit: WeightUnit,
   distanceUnit: DistanceUnit,
+  /** Repeated holds: a timed set also records how many holds, as reps. */
+  { holdsAsReps = false }: { holdsAsReps?: boolean } = {},
 ): { ok: true; value: SetInput } | { ok: false; error: string } {
   const reps = f.reps.trim()
   const weight = f.weight.trim()
@@ -63,7 +65,7 @@ export function parseSet(
         ? Number(seconds)
         : null
   const value: SetInput = {
-    reps: mode === 'strength' && reps ? Number(reps) : null,
+    reps: (mode === 'strength' || (mode === 'timed' && holdsAsReps)) && reps ? Number(reps) : null,
     weightValue: mode === 'strength' && weight ? Number(weight) : null,
     weightUnit,
     durationSeconds,

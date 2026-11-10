@@ -131,6 +131,7 @@ export interface TargetsForm {
   targetReps: string
   restSeconds: string
   targetSeconds: string
+  releaseSeconds: string
   perSide: boolean
   notes: string
 }
@@ -146,6 +147,7 @@ export function validateTargets(
   const setsText = form.targetSets.trim()
   const restText = form.restSeconds.trim()
   const holdText = form.targetSeconds.trim()
+  const releaseText = form.releaseSeconds.trim()
   const targetReps = blankToNull(form.targetReps)
   const notes = blankToNull(form.notes)
 
@@ -164,13 +166,30 @@ export function validateTargets(
   if (targetSeconds !== null && !(targetSeconds >= 1 && targetSeconds <= LIMITS.targetSecondsMax)) {
     errors.targetSeconds = `Use whole seconds from 1 to ${LIMITS.targetSecondsMax}.`
   }
+  const targetReleaseSeconds = releaseText ? wholeNumber(releaseText) : null
+  if (
+    targetReleaseSeconds !== null &&
+    !(targetReleaseSeconds >= 1 && targetReleaseSeconds <= LIMITS.targetSecondsMax)
+  ) {
+    errors.releaseSeconds = `Use whole seconds from 1 to ${LIMITS.targetSecondsMax}.`
+  } else if (targetReleaseSeconds !== null && targetSeconds === null && !errors.targetSeconds) {
+    errors.releaseSeconds = 'Set a hold time too: release is the break between holds.'
+  }
   if (notes && notes.length > LIMITS.planNotesMax) {
     errors.notes = `Keep notes under ${LIMITS.planNotesMax + 1} characters.`
   }
   if (Object.keys(errors).length) return { ok: false, errors }
   return {
     ok: true,
-    value: { targetSets, targetReps, restSeconds, targetSeconds, perSide: form.perSide, notes },
+    value: {
+      targetSets,
+      targetReps,
+      restSeconds,
+      targetSeconds,
+      targetReleaseSeconds,
+      perSide: form.perSide,
+      notes,
+    },
   }
 }
 
@@ -180,6 +199,7 @@ export function targetsToForm(targets: PlanTargets): TargetsForm {
     targetReps: targets.targetReps ?? '',
     restSeconds: targets.restSeconds?.toString() ?? '',
     targetSeconds: targets.targetSeconds?.toString() ?? '',
+    releaseSeconds: targets.targetReleaseSeconds?.toString() ?? '',
     perSide: targets.perSide,
     notes: targets.notes ?? '',
   }

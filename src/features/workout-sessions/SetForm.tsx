@@ -5,6 +5,7 @@ import controls from '../../styles/controls.module.css'
 import { buzz, useCountdown } from '../../hooks/useCountdown'
 import { formatDuration } from '../workout-plans/format'
 import { parseSet, toFields, type SetFields } from './setFields'
+import { buildTimerSteps, timerSummary, type TimerStep } from './timerSteps'
 import type { SetMode } from './workoutMath'
 import styles from './workout.module.css'
 
@@ -60,57 +61,51 @@ function Stepper({
   )
 }
 
-/** Counts down a hold, with a pause to switch sides when the target is per side. */
+/**
+ * Counts down a timed set from the Seconds field: one hold, or repeated holds
+ * with a release between them, per side with a pause to switch.
+ */
 function HoldTimer({
   seconds,
   perSide,
-  onDone,
+  releaseSeconds,
+  holds,
 }: {
-  seconds: number
+  seconds: number | null
   perSide: boolean
-  onDone: (seconds: number) => void
+  releaseSeconds: number | null
+  holds: number
 }) {
-  const [phase, setPhase] = useState<'idle' | 'first' | 'switch' | 'second' | 'done'>('idle')
-  // The countdown's done-callback starts the next phase through a ref, since it
-  // can't refer to `timer` while `timer` is being created.
+  // -1 before starting; steps.length once finished.
+  const [index, setIndex] = useState(-1)
+  // The sequence is fixed when the timer starts, so editing the fields mid-set can't scramble it.
+  const [steps, setSteps] = useState<TimerStep[]>([])
   const startRef = useRef<(seconds: number) => void>(() => {})
   const timer = useCountdown(() => {
-    if (phase === 'first' && perSide) {
-      buzz([150, 100, 150])
-      setPhase('switch')
-      startRef.current(5)
-    } else if (phase === 'switch') {
-      setPhase('second')
-      startRef.current(seconds)
+    const next = index + 1
+    setIndex(next)
+    if (next < steps.length) {
+      buzz(steps[next].kind === 'hold' ? [150, 100, 150] : 150)
+      startRef.current(steps[next].seconds)
     } else {
       buzz([300, 100, 300])
-      setPhase('done')
-      onDone(seconds)
     }
   })
   useEffect(() => {
     startRef.current = timer.start
   })
-  const label =
-    phase === 'switch'
-      ? 'Switch sides'
-      : phase === 'first'
-        ? perSide
-          ? 'First side'
-          : 'Hold'
-        : phase === 'second'
-          ? 'Second side'
-          : phase === 'done'
-            ? 'Done'
-            : perSide
-              ? `${seconds} s each side`
-              : `${seconds} s hold`
+  const done = index >= 0 && index >= steps.length
+  const label = timer.running
+    ? steps[index].label
+    : done
+      ? 'Done'
+      : timerSummary({ seconds, perSide, releaseSeconds, holds })
 
   return (
     <div className={styles.timer} role="timer" aria-live="polite" aria-label={label}>
       <span className={styles.muted}>{label}</span>
       <span className={styles.timerValue}>
-        {timer.running ? timer.remaining : phase === 'done' ? '✓' : seconds}
+        {timer.running ? timer.remaining : done ? '✓' : (seconds ?? '–')}
       </span>
       {timer.running ? (
         <button
@@ -118,7 +113,7 @@ function HoldTimer({
           className={controls.button}
           onClick={() => {
             timer.stop()
-            setPhase('idle')
+            setIndex(-1)
           }}
         >
           Stop timer
@@ -127,16 +122,28 @@ function HoldTimer({
         <button
           type="button"
           className={controls.button}
+          disabled={!seconds}
           onClick={() => {
-            setPhase('first')
-            timer.start(seconds)
+            if (!seconds) return
+            const sequence = buildTimerSteps({ seconds, perSide, releaseSeconds, holds })
+            setSteps(sequence)
+            setIndex(0)
+            timer.start(sequence[0].seconds)
           }}
         >
-          {phase === 'done' ? 'Start again' : 'Start timer'}
+          {done ? 'Start again' : 'Start timer'}
         </button>
       )}
     </div>
   )
+}
+
+/** A whole number from typed text within 1..max, else null. */
+function wholeIn(text: string, max: number): number | null {
+  const t = text.trim()
+  if (!/^\d+$/.test(t)) return null
+  const n = Number(t)
+  return n >= 1 && n <= max ? n : null
 }
 
 /** Entry for one set: reps and weight, a timed hold, or cardio time and distance. */
@@ -146,8 +153,9 @@ export function SetForm({
   initial,
   weightUnit,
   distanceUnit,
-  holdSeconds,
+  showTimer,
   perSide,
+  releaseSeconds = null,
   submitLabel,
   disabledReason,
   rest,
@@ -159,8 +167,12 @@ export function SetForm({
   initial: SetInput
   weightUnit: WeightUnit
   distanceUnit: DistanceUnit
-  holdSeconds: number | null
+  /** Show the hold timer for a timed set (not when editing a saved set). */
+  showTimer: boolean
+  /** The plan's per-side setting, the starting value of the Each side toggle. */
   perSide: boolean
+  /** Release between repeated holds; with it, the set also records how many holds (reps). */
+  releaseSeconds?: number | null
   submitLabel: string
   /** Set while saving isn't possible (offline); shown instead of submitting. */
   disabledReason?: string
@@ -172,13 +184,16 @@ export function SetForm({
   const [fields, setFields] = useState(() => toFields(initial))
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  // Each side can be changed for this set only; the plan stays as it is (issue #70).
+  const [sides, setSides] = useState(perSide)
   const set = (key: keyof SetFields) => (value: string) =>
     setFields((f) => ({ ...f, [key]: value }))
+  const intervals = mode === 'timed' && Boolean(releaseSeconds)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (disabledReason) return
-    const result = parseSet(mode, fields, weightUnit, distanceUnit)
+    const result = parseSet(mode, fields, weightUnit, distanceUnit, { holdsAsReps: intervals })
     if (!result.ok) {
       setError(result.error)
       return
@@ -202,13 +217,20 @@ export function SetForm({
   return (
     <form className={styles.entry} onSubmit={handleSubmit} noValidate aria-label={title}>
       <p className={styles.entryTitle}>{title}</p>
-      {mode === 'timed' && holdSeconds ? (
+      {mode === 'timed' && showTimer && (
         <HoldTimer
-          seconds={holdSeconds}
-          perSide={perSide}
-          onDone={(s) => set('seconds')(String(s))}
+          seconds={wholeIn(fields.seconds, 3600)}
+          perSide={sides}
+          releaseSeconds={intervals ? releaseSeconds : null}
+          holds={wholeIn(fields.reps, 100) ?? 1}
         />
-      ) : null}
+      )}
+      {mode === 'timed' && (
+        <label className={styles.checkbox}>
+          <input type="checkbox" checked={sides} onChange={(e) => setSides(e.target.checked)} />
+          Each side (left and right)
+        </label>
+      )}
       <div className={styles.fields}>
         {mode === 'strength' && (
           <>
@@ -228,9 +250,18 @@ export function SetForm({
             />
           </>
         )}
+        {intervals && (
+          <Stepper
+            label="Reps (holds)"
+            value={fields.reps}
+            step={1}
+            inputMode="numeric"
+            onChange={set('reps')}
+          />
+        )}
         {mode === 'timed' && (
           <Stepper
-            label={perSide ? 'Seconds (each side)' : 'Seconds'}
+            label={sides ? 'Seconds (each side)' : 'Seconds'}
             value={fields.seconds}
             step={5}
             inputMode="numeric"

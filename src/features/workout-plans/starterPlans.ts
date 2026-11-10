@@ -27,6 +27,7 @@ const hold = (id: string, perSide: boolean): StarterExercise => ({
     targetReps: null,
     restSeconds: 0,
     targetSeconds: 30,
+    targetReleaseSeconds: null,
     perSide,
     notes: null,
   },

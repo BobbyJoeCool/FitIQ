@@ -241,6 +241,19 @@ function TargetsEditor({
             onChange={(e) => set('targetSeconds', e.target.value)}
           />
         </Field>
+        <Field
+          label="Release (sec)"
+          hint="For repeated holds, like the ab roller. Reps sets how many"
+          error={errors.releaseSeconds}
+        >
+          <input
+            className={controls.input}
+            inputMode="numeric"
+            placeholder="5"
+            value={form.releaseSeconds}
+            onChange={(e) => set('releaseSeconds', e.target.value)}
+          />
+        </Field>
       </div>
       <label className={styles.checkbox}>
         <input

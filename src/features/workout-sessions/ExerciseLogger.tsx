@@ -141,8 +141,9 @@ export function ExerciseLogger({
                   initial={set}
                   weightUnit={set.weightUnit ?? weightUnit}
                   distanceUnit={set.distanceUnit ?? distanceUnit}
-                  holdSeconds={null}
+                  showTimer={false}
                   perSide={item.targets.perSide}
+                  releaseSeconds={item.targets.targetReleaseSeconds}
                   submitLabel="Save set"
                   disabledReason={offlineReason}
                   onSubmit={(input) => editSet(set, input)}
@@ -174,8 +175,9 @@ export function ExerciseLogger({
           initial={nextSetDefaults(sets.at(-1), lastTime?.sets, item.targets, weightUnit)}
           weightUnit={weightUnit}
           distanceUnit={distanceUnit}
-          holdSeconds={item.targets.targetSeconds}
+          showTimer
           perSide={item.targets.perSide}
+          releaseSeconds={item.targets.targetReleaseSeconds}
           submitLabel="Complete set"
           disabledReason={offlineReason}
           rest={rest}

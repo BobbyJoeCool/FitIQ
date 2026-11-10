@@ -86,6 +86,7 @@ interface ExerciseRow {
   target_sets: number | null
   target_reps: string | null
   target_seconds: number | null
+  target_release_seconds: number | null
   per_side: boolean
   rest_seconds: number | null
   workout_sets?: SetRow[]
@@ -104,7 +105,7 @@ interface SessionRow {
 const SET_COLUMNS =
   'id, session_exercise_id, set_number, reps, weight_value, weight_unit, duration_seconds, distance_value, distance_unit, notes, completed_at'
 const EXERCISE_COLUMNS =
-  'id, session_id, catalog_exercise_id, custom_exercise_id, exercise_name, sort_order, is_skipped, notes, target_sets, target_reps, target_seconds, per_side, rest_seconds'
+  'id, session_id, catalog_exercise_id, custom_exercise_id, exercise_name, sort_order, is_skipped, notes, target_sets, target_reps, target_seconds, target_release_seconds, per_side, rest_seconds'
 const SESSION_COLUMNS = 'id, name, plan_id, started_at, completed_at, notes'
 const FULL_SESSION = `${SESSION_COLUMNS}, workout_session_exercises(${EXERCISE_COLUMNS}, workout_sets(${SET_COLUMNS}))`
 
@@ -141,6 +142,7 @@ function exerciseFromRow(row: ExerciseRow): SessionExercise {
       targetSets: row.target_sets,
       targetReps: row.target_reps,
       targetSeconds: row.target_seconds,
+      targetReleaseSeconds: row.target_release_seconds,
       perSide: row.per_side,
       restSeconds: row.rest_seconds,
       notes: row.notes,

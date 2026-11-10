@@ -29,6 +29,7 @@ const item = (id: string, overrides: Partial<PlanExercise> = {}): PlanExercise =
   targetReps: null,
   restSeconds: null,
   targetSeconds: null,
+  targetReleaseSeconds: null,
   perSide: false,
   notes: null,
   ...overrides,
@@ -200,6 +201,7 @@ describe('plan builder', () => {
       targetReps: '30 s',
       restSeconds: 45,
       targetSeconds: null,
+      targetReleaseSeconds: null,
       perSide: false,
       notes: null,
     })
