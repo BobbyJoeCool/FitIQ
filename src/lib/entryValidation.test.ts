@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { toLocalInput, unitForType, validateMeasurement, validateWeighIn } from './entryValidation'
+import {
+  toLocalInput,
+  unitForType,
+  validateCardio,
+  validateMeasurement,
+  validateWeighIn,
+} from './entryValidation'
 
 const NOW = new Date(2026, 10, 9, 8, 30)
 
@@ -60,5 +66,52 @@ describe('validateMeasurement', () => {
 
   it('formats local datetime-input values', () => {
     expect(toLocalInput(new Date(2026, 0, 5, 7, 3))).toBe('2026-01-05T07:03')
+  })
+})
+
+describe('validateCardio', () => {
+  const base = {
+    activity: 'walking_pad' as const,
+    when: '2026-11-09T07:00',
+    minutes: '30',
+    distance: '1.5',
+    distanceUnit: 'mi' as const,
+    incline: '2.5',
+    notes: '',
+  }
+
+  it('turns the form into a session, with optional fields as null', () => {
+    expect(validateCardio(base, NOW)).toEqual({
+      ok: true,
+      value: {
+        activity: 'walking_pad',
+        startedAt: new Date(2026, 10, 9, 7, 0).toISOString(),
+        durationSeconds: 1800,
+        distanceValue: 1.5,
+        distanceUnit: 'mi',
+        incline: 2.5,
+        notes: null,
+      },
+    })
+    expect(validateCardio({ ...base, distance: '', incline: '' }, NOW)).toMatchObject({
+      ok: true,
+      value: { distanceValue: null, distanceUnit: null, incline: null },
+    })
+    expect(validateCardio({ ...base, minutes: '12.5' }, NOW)).toMatchObject({
+      value: { durationSeconds: 750 },
+    })
+  })
+
+  it('rejects what the database would', () => {
+    const errs = (patch: Partial<typeof base>) => {
+      const r = validateCardio({ ...base, ...patch }, NOW)
+      return r.ok ? {} : r.errors
+    }
+    expect(errs({ minutes: '' }).minutes).toBeDefined()
+    expect(errs({ minutes: '0' }).minutes).toBeDefined()
+    expect(errs({ minutes: '1441' }).minutes).toBeDefined()
+    expect(errs({ distance: '1001' }).distance).toBeDefined()
+    expect(errs({ incline: '41' }).incline).toBeDefined()
+    expect(errs({ incline: '2.25' }).incline).toBeDefined()
   })
 })

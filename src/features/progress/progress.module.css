@@ -198,3 +198,10 @@
   margin: 0;
   font-weight: var(--font-weight-semibold);
 }
+
+.panelHeader > a,
+.entryMain > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
+}

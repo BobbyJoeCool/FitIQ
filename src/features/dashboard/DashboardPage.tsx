@@ -5,10 +5,12 @@ import { useAsync } from '../../hooks/useAsync'
 import {
   getInProgressSession,
   getLatestWeighIn,
+  listCardio,
   listFinishedWorkoutDates,
   listMyPlans,
   listSessions,
 } from '../../lib/data'
+import { CARDIO_LABELS } from '../../lib/cardioActivities'
 import { convertWeight, round } from '../../lib/units'
 import controls from '../../styles/controls.module.css'
 import { useAuth } from '../auth/AuthContext'
@@ -21,19 +23,28 @@ import { formatDateTime, formatElapsed, secondsBetween } from '../workout-sessio
 import styles from './dashboard.module.css'
 
 async function loadDashboard(userId: string) {
-  const [inProgress, recent, finished, plans, latestWeight] = await Promise.all([
+  const [inProgress, recent, finished, plans, latestWeight, cardio] = await Promise.all([
     getInProgressSession(userId),
     listSessions(userId, 0, 3),
     listFinishedWorkoutDates(userId),
     listMyPlans(userId),
     getLatestWeighIn(userId),
+    listCardio(userId, 0, 3),
   ])
   const active = plans.filter((p) => !p.isArchived && p.exerciseCount > 0)
   // "Up next" is the plan you used most recently (docs/future-versions.md FV-7
   // fallback, until programs exist), else your first plan.
   const lastPlanId = finished.find((w) => w.planId && active.some((p) => p.id === w.planId))?.planId
   const upNext = active.find((p) => p.id === lastPlanId) ?? active[0] ?? null
-  return { inProgress, recent: recent.items, finished, upNext, latestWeight, now: new Date() }
+  return {
+    inProgress,
+    recent: recent.items,
+    cardio: cardio.items,
+    finished,
+    upNext,
+    latestWeight,
+    now: new Date(),
+  }
 }
 
 /** The dashboard (step 6.5): today's workout, recent activity, latest weight, quick links. */
@@ -65,7 +76,7 @@ export function DashboardPage() {
       )}
       {state.status === 'ready' &&
         (() => {
-          const { inProgress, recent, finished, upNext, latestWeight, now } = state.data
+          const { inProgress, recent, cardio, finished, upNext, latestWeight, now } = state.data
           const totals = workoutTotals(finished, now)
           const setsSoFar = inProgress?.exercises.reduce((n, e) => n + e.sets.length, 0) ?? 0
           return (
@@ -179,6 +190,28 @@ export function DashboardPage() {
                   </ul>
                 )}
                 <Link to="/workout/history">All workouts</Link>
+              </div>
+
+              <div className={styles.card}>
+                <h2>Recent cardio</h2>
+                {cardio.length === 0 ? (
+                  <p className={styles.muted} style={{ margin: 0 }}>
+                    Walks, runs, and walking pad sessions show here.
+                  </p>
+                ) : (
+                  <ul className={styles.list}>
+                    {cardio.map((c) => (
+                      <li key={c.id}>
+                        <span>{CARDIO_LABELS[c.activity]}</span>
+                        <span className={`${styles.muted} ${styles.small}`}>
+                          {formatDateTime(c.startedAt).split(' · ')[0]} ·{' '}
+                          {formatElapsed(c.durationSeconds)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Link to="/cardio">Log cardio</Link>
               </div>
 
               <div className={styles.card}>
