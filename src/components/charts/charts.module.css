@@ -1,0 +1,122 @@
+/* Single-series charts (dataviz mark specs): 2px line, 10% area wash,
+   end dot with a 2px surface ring, hairline recessive grid, columns at most
+   24px with 4px rounded data ends. Colors are tokens, so dark mode follows. */
+
+.chart {
+  position: relative;
+  width: 100%;
+}
+
+.chart:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.tick {
+  fill: var(--color-text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.line {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.area {
+  fill: var(--color-primary);
+  opacity: 0.1;
+}
+
+.dot {
+  fill: var(--color-primary);
+  stroke: var(--color-surface);
+  stroke-width: 2;
+}
+
+.endLabel {
+  fill: var(--color-text);
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.crosshair {
+  stroke: var(--color-text-muted);
+  stroke-width: 1;
+}
+
+.bar {
+  fill: var(--color-primary);
+}
+
+.barActive {
+  fill: var(--color-primary-strong);
+}
+
+.tooltip {
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  gap: 2px;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--font-size-sm);
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.tooltipValue {
+  font-weight: var(--font-weight-semibold);
+}
+
+.tooltipLabel {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.table {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.table summary {
+  color: var(--color-primary);
+  cursor: pointer;
+  min-height: var(--tap-target);
+  display: flex;
+  align-items: center;
+}
+
+.table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}

@@ -11,6 +11,10 @@ const alex = { id: 'user-a', email: 'a@example.com' }
 beforeEach(() => {
   vi.mocked(data.onAuthChange).mockReturnValue(() => {})
   vi.mocked(data.listMyPlans).mockResolvedValue([])
+  vi.mocked(data.listFinishedWorkoutDates).mockResolvedValue([])
+  vi.mocked(data.getLatestWeighIn).mockResolvedValue(null)
+  vi.mocked(data.getInProgressSession).mockResolvedValue(null)
+  vi.mocked(data.listSessions).mockResolvedValue({ items: [], hasMore: false })
   vi.mocked(data.checkConnection).mockResolvedValue({ ok: true, serverTime: 'now' })
   vi.mocked(data.getMyProfile).mockResolvedValue(null)
 })
@@ -89,6 +93,6 @@ describe('auth states', () => {
   it('a signed-in user visiting sign-in goes to the dashboard', async () => {
     vi.mocked(data.getCurrentUser).mockResolvedValue(alex)
     renderRoute('/sign-in')
-    expect(await screen.findByTestId('connection-status')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Hi, a@example.com' })).toBeInTheDocument()
   })
 })

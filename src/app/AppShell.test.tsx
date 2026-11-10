@@ -11,6 +11,10 @@ beforeEach(() => {
   vi.mocked(data.getCurrentUser).mockResolvedValue({ id: 'user-a', email: 'a@example.com' })
   vi.mocked(data.onAuthChange).mockReturnValue(() => {})
   vi.mocked(data.listMyPlans).mockResolvedValue([])
+  vi.mocked(data.listFinishedWorkoutDates).mockResolvedValue([])
+  vi.mocked(data.getLatestWeighIn).mockResolvedValue(null)
+  vi.mocked(data.getInProgressSession).mockResolvedValue(null)
+  vi.mocked(data.listSessions).mockResolvedValue({ items: [], hasMore: false })
   vi.mocked(data.loadExerciseLibrary).mockResolvedValue([])
   vi.mocked(data.checkConnection).mockResolvedValue({ ok: true, serverTime: 'now' })
   vi.mocked(data.getMyProfile).mockResolvedValue({
@@ -71,9 +75,10 @@ describe('AppShell navigation', () => {
     expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument()
   })
 
-  it('shows the database connection status on the dashboard', async () => {
+  it('greets the user on the dashboard and offers a workout', async () => {
     renderRoute('/')
-    expect(await screen.findByText('Database: connected')).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Hi, Alex' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Start a workout' })).toBeInTheDocument()
+    expect(screen.getByText('No weigh-ins yet.')).toBeInTheDocument()
   })
 })
