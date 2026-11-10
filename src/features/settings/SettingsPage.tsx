@@ -2,11 +2,26 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { Field } from '../../components/forms/Field'
 import { useInstallPrompt } from '../../hooks/useInstallPrompt'
-import { updateMyProfile } from '../../lib/data'
+import {
+  listAllCardio,
+  listAllFinishedSessions,
+  listAllMeasurements,
+  listAllWeighIns,
+  setDeletionRequested,
+  updateMyProfile,
+} from '../../lib/data'
 import type { LengthUnit, WeightUnit } from '../../lib/units'
 import controls from '../../styles/controls.module.css'
 import { useAuth } from '../auth/AuthContext'
 import { useProfile } from '../profile/ProfileContext'
+import {
+  cardioCsv,
+  downloadFile,
+  exportFilename,
+  measurementsCsv,
+  weighInsCsv,
+  workoutsCsv,
+} from './exportCsv'
 import styles from './settings.module.css'
 
 /** /settings: profile and units (7.2), install (7.3), privacy, and sign out. */
@@ -53,6 +68,8 @@ export function SettingsPage() {
         )}
       </div>
 
+      <ExportPanel />
+
       <InstallPanel />
 
       <div className={styles.panel}>
@@ -73,6 +90,8 @@ export function SettingsPage() {
           <li>FitIQ has no ads, no analytics, and no tracking.</li>
         </ul>
       </div>
+
+      <DeletePanel />
     </section>
   )
 }
@@ -208,6 +227,152 @@ function InstallPanel() {
             </li>
           </ul>
         </>
+      )}
+    </div>
+  )
+}
+
+const EXPORTS = [
+  {
+    kind: 'workouts',
+    label: 'Workouts and sets',
+    load: listAllFinishedSessions,
+    build: workoutsCsv,
+  },
+  { kind: 'weigh-ins', label: 'Weigh-ins', load: listAllWeighIns, build: weighInsCsv },
+  {
+    kind: 'measurements',
+    label: 'Measurements',
+    load: listAllMeasurements,
+    build: measurementsCsv,
+  },
+  { kind: 'cardio', label: 'Cardio', load: listAllCardio, build: cardioCsv },
+] as const
+
+/** Download your own data as CSV (step 8.2). */
+function ExportPanel() {
+  const { user } = useAuth()
+  const [busy, setBusy] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function download(item: (typeof EXPORTS)[number]) {
+    setBusy(item.kind)
+    setError(null)
+    try {
+      // Each loader returns the matching row type for its builder.
+      const rows = await (item.load as (id: string) => Promise<unknown[]>)(user?.id ?? '')
+      downloadFile(exportFilename(item.kind), (item.build as (r: unknown[]) => string)(rows))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not export your data.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <div className={styles.panel}>
+      <h2>Download your data</h2>
+      <p className={styles.muted}>
+        CSV files that open in any spreadsheet. Only your own data, with the unit on every row.
+      </p>
+      <div className={styles.actions}>
+        {EXPORTS.map((item) => (
+          <button
+            key={item.kind}
+            type="button"
+            className={controls.button}
+            disabled={busy !== null}
+            onClick={() => download(item)}
+          >
+            {busy === item.kind ? 'Preparing…' : item.label}
+          </button>
+        ))}
+      </div>
+      {error && (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** Ask the owner to delete this account (step 8.3). Nothing is deleted here. */
+function DeletePanel() {
+  const { user } = useAuth()
+  const { profile, setProfile } = useProfile()
+  const [confirmText, setConfirmText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const pending = profile?.deletionRequestedAt
+
+  async function toggle(requested: boolean) {
+    setBusy(true)
+    setError(null)
+    try {
+      setProfile(await setDeletionRequested(user?.id ?? '', requested))
+      setConfirmText('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update your request.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className={styles.panel}>
+      <h2>Delete my account</h2>
+      {pending ? (
+        <>
+          <p role="status">
+            You asked for your account to be deleted on {new Date(pending).toLocaleDateString()}.
+            The household owner will delete it and let you know. Until then, everything still works
+            and you can change your mind.
+          </p>
+          <div>
+            <button
+              type="button"
+              className={controls.button}
+              disabled={busy}
+              onClick={() => toggle(false)}
+            >
+              Cancel the request
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p>
+            FitIQ accounts are managed by the household owner, so this sends them a request. When
+            they delete your account,{' '}
+            <strong>everything you've logged is permanently removed</strong>: workouts, sets, plans,
+            custom exercises, weigh-ins, measurements, and cardio. It can't be undone, so download
+            your data first if you want a copy.
+          </p>
+          <Field label="Type DELETE to confirm">
+            <input
+              className={controls.input}
+              autoComplete="off"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+            />
+          </Field>
+          <div>
+            <button
+              type="button"
+              className={`${controls.button} ${styles.danger}`}
+              disabled={busy || confirmText.trim() !== 'DELETE'}
+              onClick={() => toggle(true)}
+            >
+              Request account deletion
+            </button>
+          </div>
+        </>
+      )}
+      {error && (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
       )}
     </div>
   )

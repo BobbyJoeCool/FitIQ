@@ -169,3 +169,11 @@ playwright/.cache/
 DevNotes/
 CLAUDE.md
 docs/agents
+
+# Database dumps hold real data (scripts/backup.sh)
+backups/
+
+# Playwright
+dist-e2e/
+playwright-report/
+test-results/

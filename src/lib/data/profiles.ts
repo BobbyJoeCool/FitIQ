@@ -10,6 +10,8 @@ export interface Profile {
   displayName: string | null
   weightUnit: WeightUnit
   lengthUnit: LengthUnit
+  /** Set while an account deletion request is pending (step 8.3). */
+  deletionRequestedAt?: string | null
 }
 
 export type ProfileUpdate = Partial<Pick<Profile, 'displayName' | 'weightUnit' | 'lengthUnit'>>
@@ -19,9 +21,10 @@ interface ProfileRow {
   display_name: string | null
   weight_unit: WeightUnit
   length_unit: LengthUnit
+  deletion_requested_at: string | null
 }
 
-const COLUMNS = 'id, display_name, weight_unit, length_unit'
+const COLUMNS = 'id, display_name, weight_unit, length_unit, deletion_requested_at'
 
 function fromRow(row: ProfileRow): Profile {
   return {
@@ -29,6 +32,7 @@ function fromRow(row: ProfileRow): Profile {
     displayName: row.display_name,
     weightUnit: row.weight_unit,
     lengthUnit: row.length_unit,
+    deletionRequestedAt: row.deletion_requested_at,
   }
 }
 
@@ -56,5 +60,20 @@ export async function updateMyProfile(userId: string, update: ProfileUpdate): Pr
     .select(COLUMNS)
     .single<ProfileRow>()
   if (error) throw toDataError(error, 'Could not save your profile.')
+  return fromRow(data)
+}
+
+/**
+ * Asks the owner to delete this account (or cancels the request). Nothing is
+ * deleted here: the owner does that from the dashboard (docs/accounts.md).
+ */
+export async function setDeletionRequested(userId: string, requested: boolean): Promise<Profile> {
+  const { data, error } = await getSupabase()
+    .from('profiles')
+    .update({ deletion_requested_at: requested ? new Date().toISOString() : null })
+    .eq('id', userId)
+    .select(COLUMNS)
+    .single<ProfileRow>()
+  if (error) throw toDataError(error, 'Could not update your request.')
   return fromRow(data)
 }

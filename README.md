@@ -14,6 +14,7 @@ React, TypeScript, and Vite on GitHub Pages; Supabase Auth and PostgreSQL with R
 
 - [`plan.md`](plan.md): product and technical plan
 - [`docs/exercise-sources.md`](docs/exercise-sources.md): exercise data license, the pinned dataset commit, and field mapping
+- [`docs/backup-restore.md`](docs/backup-restore.md): backing up the hosted database and restoring it locally
 - [`docs/accounts.md`](docs/accounts.md): adding, resetting, and removing family accounts
 - [`docs/future-versions.md`](docs/future-versions.md): upgrades planned after v1
 - [`docs/adr/`](docs/adr/): architecture decisions, starting with delete behavior per table
@@ -42,6 +43,8 @@ npm run dev             # http://localhost:5173
 | `npm test` | Vitest unit and component tests |
 | `npm run format` / `format:check` | Prettier |
 | `npm run test:rls` | Two-account RLS test (see below) |
+| `npm run test:e2e` | Playwright end-to-end tests against the local Supabase stack (`npm run db:start` first) |
+| `scripts/backup.sh` | Dump the hosted or local database, restore into the local stack, count rows ([docs](docs/backup-restore.md)) |
 
 All database access goes through `src/lib/data/`. Components never import Supabase directly.
 
@@ -81,6 +84,6 @@ Run it against the hosted project before every rollout, and never put real famil
 
 ### Deploys and keep-alive
 
-- `.github/workflows/ci.yml` runs lint, format check, typecheck, tests, and a build on every pull request and push to `main`.
+- `.github/workflows/ci.yml` runs lint, format check, typecheck, unit and component tests, and a build on every pull request and push to `main`, plus a Playwright job against a local Supabase stack started from the migrations.
 - `.github/workflows/deploy.yml` builds and publishes to GitHub Pages on every push to `main`.
 - `.github/workflows/keepalive.yml` runs one tiny database query (`keepalive()`) twice a week so the free Supabase project isn't paused. Supabase pauses Free-plan projects after a week without enough database activity ([Supabase docs](https://supabase.com/docs/guides/platform/free-project-pausing), checked 2026-11-08). It can also be run by hand from the Actions tab.
