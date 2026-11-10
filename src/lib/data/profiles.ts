@@ -1,8 +1,9 @@
 import { getSupabase } from '../supabase'
 import { toDataError } from './errors'
 
-export type WeightUnit = 'lb' | 'kg'
-export type LengthUnit = 'in' | 'cm'
+import type { LengthUnit, WeightUnit } from '../units'
+
+export type { LengthUnit, WeightUnit } from '../units'
 
 export interface Profile {
   id: string

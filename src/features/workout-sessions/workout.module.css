@@ -1,0 +1,351 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.header h1 {
+  margin: 0;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.small {
+  font-size: var(--font-size-sm);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.rowLink {
+  composes: row;
+  color: inherit;
+  text-decoration: none;
+}
+
+.rowLink:hover {
+  border-color: var(--color-primary);
+}
+
+.rowBody {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.rowTitle {
+  font-weight: var(--font-weight-semibold);
+}
+
+.section {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.section h2 {
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger);
+}
+
+/* Active workout */
+
+.strip {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0 0 var(--space-2);
+  overflow-x: auto;
+  list-style: none;
+  scrollbar-width: thin;
+}
+
+.stripItem {
+  flex: none;
+  display: grid;
+  min-width: 7.5rem;
+  max-width: 11rem;
+  min-height: var(--tap-target);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stripItem[aria-current='step'] {
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.stripName {
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stripStatus {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.done {
+  color: var(--color-success);
+}
+
+.card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.card h2 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+}
+
+.cardTop {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.sets {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.setRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-target);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.setNumber {
+  flex: none;
+  width: 3.5rem;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.setValue {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: var(--font-weight-semibold);
+}
+
+.setActions {
+  display: flex;
+  flex: none;
+  gap: var(--space-1);
+}
+
+.compact {
+  padding: 0 var(--space-3);
+}
+
+.entry {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.entryTitle {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+}
+
+.fields {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* Side by side only when each stepper has room for a 4-digit weight. */
+@media (min-width: 520px) {
+  .fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.stepper {
+  display: grid;
+  grid-template-columns: var(--tap-target) minmax(0, 1fr) var(--tap-target);
+  gap: var(--space-1);
+}
+
+.stepper input {
+  text-align: center;
+  font-size: var(--font-size-lg);
+}
+
+.stepButton {
+  padding: 0;
+  font-size: var(--font-size-lg);
+}
+
+.complete {
+  min-height: 56px;
+  font-size: var(--font-size-lg);
+}
+
+.timer {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.timerValue {
+  font-size: 3rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+}
+
+.restBar {
+  position: sticky;
+  bottom: calc(var(--bottom-nav-height) + var(--space-2));
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (min-width: 900px) {
+  .restBar {
+    bottom: var(--space-4);
+  }
+}
+
+.restBar button {
+  border-color: var(--color-on-primary);
+}
+
+.restTime {
+  font-size: var(--font-size-xl);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+}
+
+.navRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.skipped {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+@media (min-width: 640px) {
+  .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.stats div {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.stats dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.stats dd {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+.confirm p {
+  flex: 1 1 14rem;
+  margin: 0;
+}
+
+.danger {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.textarea {
+  min-height: 5rem;
+}

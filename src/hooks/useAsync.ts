@@ -22,8 +22,9 @@ export function useAsync<T>(load: () => Promise<T>, key: string) {
 
   useEffect(() => {
     let active = true
-    loadRef
-      .current()
+    // Promise.resolve().then(...) turns a synchronous throw into a rejection too.
+    Promise.resolve()
+      .then(() => loadRef.current())
       .then((data) => {
         if (active) setResult({ token, state: { status: 'ready', data } })
       })
