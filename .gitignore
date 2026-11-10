@@ -177,3 +177,6 @@ backups/
 dist-e2e/
 playwright-report/
 test-results/
+
+# Demo seed credentials
+scripts/demo.env

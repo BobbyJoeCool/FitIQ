@@ -1,0 +1,33 @@
+name: Reseed demo account
+
+# Resets the public demo account's data every week (step 9.1), so visitors
+# always see a complete demo. Only touches the account in DEMO_EMAIL, which
+# must contain "demo"; the seed signs in as that user with the publishable
+# key, so RLS keeps it out of every other account. Skips quietly until the
+# owner adds the DEMO_EMAIL variable and DEMO_PASSWORD secret.
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Mondays 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reseed:
+    if: vars.DEMO_EMAIL != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: node scripts/seed-demo.mjs
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          DEMO_EMAIL: ${{ vars.DEMO_EMAIL }}
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}

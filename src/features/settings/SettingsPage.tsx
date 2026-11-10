@@ -25,8 +25,12 @@ import {
 import styles from './settings.module.css'
 
 /** /settings: profile and units (7.2), install (7.3), privacy, and sign out. */
+/** The shared public demo account (step 9.1): anyone can sign in to it. */
+const isDemoAccount = (email: string | undefined) => /^demo@/i.test(email ?? '')
+
 export function SettingsPage() {
   const { user, signOut } = useAuth()
+  const demo = isDemoAccount(user?.email)
   const { profile } = useProfile()
   const [error, setError] = useState<string | null>(null)
 
@@ -53,10 +57,17 @@ export function SettingsPage() {
       <div className={styles.panel}>
         <h2>Account</h2>
         <p>Signed in as {user?.email}.</p>
+        {demo && (
+          <p className={styles.muted}>
+            This is the shared demo account. Anything you change here is reset every week.
+          </p>
+        )}
         <div className={styles.actions}>
-          <Link to="/set-password" className={controls.button}>
-            Change password
-          </Link>
+          {!demo && (
+            <Link to="/set-password" className={controls.button}>
+              Change password
+            </Link>
+          )}
           <button type="button" className={controls.button} onClick={handleSignOut}>
             Sign out
           </button>
@@ -91,7 +102,7 @@ export function SettingsPage() {
         </ul>
       </div>
 
-      <DeletePanel />
+      {!demo && <DeletePanel />}
     </section>
   )
 }
