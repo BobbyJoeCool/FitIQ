@@ -26,9 +26,14 @@ export function PlansPage() {
     <section>
       <div className={styles.header}>
         <h1>Plans</h1>
-        <Link to="/plans/new" state={fromPlans} className={controls.primary}>
-          New plan
-        </Link>
+        <div className={styles.headerActions}>
+          <Link to="/plans/starters" state={fromPlans} className={controls.button}>
+            Starter plans
+          </Link>
+          <Link to="/plans/new" state={fromPlans} className={controls.primary}>
+            New plan
+          </Link>
+        </div>
       </div>
 
       {state.status === 'loading' && <LoadingScreen label="Loading plans…" />}
@@ -51,13 +56,18 @@ export function PlansPage() {
         <StatusMessage
           title="No plans yet"
           action={
-            <Link to="/plans/new" state={fromPlans} className={controls.primary}>
-              Create your first plan
-            </Link>
+            <span className={styles.headerActions}>
+              <Link to="/plans/new" state={fromPlans} className={controls.primary}>
+                Create your first plan
+              </Link>
+              <Link to="/plans/starters" state={fromPlans} className={controls.button}>
+                Use a starter plan
+              </Link>
+            </span>
           }
         >
           A plan is a routine you can reuse: pick exercises from the library and set target sets,
-          reps, and rest for each one.
+          reps, and rest for each one. Or start from a ready-made one, like a full-body stretch.
         </StatusMessage>
       )}
 

@@ -6,7 +6,7 @@ import { StatusMessage } from '../../components/common/StatusMessage'
 import { FilterSelect } from '../../components/exercise/FilterSelect'
 import { useAsync } from '../../hooks/useAsync'
 import { addExerciseToPlan, type Exercise, type PlanWithExercises } from '../../lib/data'
-import { EQUIPMENT, MUSCLES, vocabLabel } from '../../lib/exerciseVocabulary'
+import { EQUIPMENT, MOVEMENT_TYPES, MUSCLES, vocabLabel } from '../../lib/exerciseVocabulary'
 import controls from '../../styles/controls.module.css'
 import { useAuth } from '../auth/AuthContext'
 import { EMPTY_FILTERS, filterExercises } from '../exercises/filterExercises'
@@ -146,6 +146,12 @@ function Picker({
             value={filters.equipment}
             options={EQUIPMENT}
             onChange={(equipment) => update({ equipment })}
+          />
+          <FilterSelect
+            label="Movement type"
+            value={filters.movementType}
+            options={MOVEMENT_TYPES}
+            onChange={(movementType) => update({ movementType })}
           />
         </div>
         <span className={styles.muted} aria-live="polite">

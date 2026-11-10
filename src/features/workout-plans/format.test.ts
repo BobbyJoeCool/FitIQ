@@ -29,3 +29,17 @@ describe('formatTargets', () => {
     expect(exerciseCount(1)).toBe('1 exercise')
   })
 })
+
+describe('hold targets', () => {
+  it('formats holds, with each side', () => {
+    expect(formatTargets({ ...NO_TARGETS, targetSets: 2, targetSeconds: 30, perSide: true })).toBe(
+      '2 × 30 s each side',
+    )
+    expect(formatTargets({ ...NO_TARGETS, targetSeconds: 90, restSeconds: 0 })).toBe(
+      'Hold 1:30 · Rest none',
+    )
+    expect(formatTargets({ ...NO_TARGETS, targetSets: 3, targetReps: '10', perSide: true })).toBe(
+      '3 × 10 each side',
+    )
+  })
+})

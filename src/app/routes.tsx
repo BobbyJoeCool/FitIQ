@@ -13,6 +13,7 @@ import { AddExercisesPage } from '../features/workout-plans/AddExercisesPage'
 import { PlanBuilderPage } from '../features/workout-plans/PlanBuilderPage'
 import { PlanFormPage } from '../features/workout-plans/PlanFormPage'
 import { PlansPage } from '../features/workout-plans/PlansPage'
+import { StarterPlansPage } from '../features/workout-plans/StarterPlansPage'
 import { WorkoutPage } from '../features/workout-sessions/WorkoutPage'
 import { AppShell } from './AppShell'
 import { NotFoundPage } from './NotFoundPage'
@@ -34,6 +35,7 @@ export const routes: RouteObject[] = [
       { path: 'exercises/:exerciseId', element: <ExerciseDetailPage /> },
       { path: 'plans', element: <PlansPage /> },
       { path: 'plans/new', element: <PlanFormPage /> },
+      { path: 'plans/starters', element: <StarterPlansPage /> },
       { path: 'plans/:id', element: <PlanBuilderPage /> },
       { path: 'plans/:id/edit', element: <PlanFormPage /> },
       { path: 'plans/:id/add', element: <AddExercisesPage /> },

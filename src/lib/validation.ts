@@ -30,6 +30,7 @@ export const LIMITS = {
   targetSetsMax: 20,
   targetRepsMax: 20,
   restSecondsMax: 3600,
+  targetSecondsMax: 600,
   planNotesMax: 500,
 } as const
 
@@ -129,10 +130,12 @@ export interface TargetsForm {
   targetSets: string
   targetReps: string
   restSeconds: string
+  targetSeconds: string
+  perSide: boolean
   notes: string
 }
 
-export type TargetsErrors = Partial<Record<keyof TargetsForm, string>>
+export type TargetsErrors = Partial<Record<Exclude<keyof TargetsForm, 'perSide'>, string>>
 
 const wholeNumber = (value: string) => (/^\d+$/.test(value) ? Number(value) : NaN)
 
@@ -142,6 +145,7 @@ export function validateTargets(
   const errors: TargetsErrors = {}
   const setsText = form.targetSets.trim()
   const restText = form.restSeconds.trim()
+  const holdText = form.targetSeconds.trim()
   const targetReps = blankToNull(form.targetReps)
   const notes = blankToNull(form.notes)
 
@@ -156,11 +160,18 @@ export function validateTargets(
   if (restSeconds !== null && !(restSeconds >= 0 && restSeconds <= LIMITS.restSecondsMax)) {
     errors.restSeconds = `Use whole seconds from 0 to ${LIMITS.restSecondsMax}.`
   }
+  const targetSeconds = holdText ? wholeNumber(holdText) : null
+  if (targetSeconds !== null && !(targetSeconds >= 1 && targetSeconds <= LIMITS.targetSecondsMax)) {
+    errors.targetSeconds = `Use whole seconds from 1 to ${LIMITS.targetSecondsMax}.`
+  }
   if (notes && notes.length > LIMITS.planNotesMax) {
     errors.notes = `Keep notes under ${LIMITS.planNotesMax + 1} characters.`
   }
   if (Object.keys(errors).length) return { ok: false, errors }
-  return { ok: true, value: { targetSets, targetReps, restSeconds, notes } }
+  return {
+    ok: true,
+    value: { targetSets, targetReps, restSeconds, targetSeconds, perSide: form.perSide, notes },
+  }
 }
 
 export function targetsToForm(targets: PlanTargets): TargetsForm {
@@ -168,6 +179,8 @@ export function targetsToForm(targets: PlanTargets): TargetsForm {
     targetSets: targets.targetSets?.toString() ?? '',
     targetReps: targets.targetReps ?? '',
     restSeconds: targets.restSeconds?.toString() ?? '',
+    targetSeconds: targets.targetSeconds?.toString() ?? '',
+    perSide: targets.perSide,
     notes: targets.notes ?? '',
   }
 }
