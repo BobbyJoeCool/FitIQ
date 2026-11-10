@@ -5,14 +5,15 @@ import { exercisePath } from '../../features/exercises/paths'
 import { ExerciseBadges } from './ExerciseBadges'
 import styles from './exercise.module.css'
 
-export function ExerciseCard({ exercise }: { exercise: Exercise }) {
+/** `linkState` is passed to the detail link, e.g. where to return to. */
+export function ExerciseCard({ exercise, linkState }: { exercise: Exercise; linkState?: unknown }) {
   const muscles = exercise.primaryMuscles.map(vocabLabel).join(', ')
   const meta = [muscles, exercise.equipment && vocabLabel(exercise.equipment)]
     .filter(Boolean)
     .join(' · ')
 
   return (
-    <Link to={exercisePath(exercise)} className={styles.card}>
+    <Link to={exercisePath(exercise)} state={linkState} className={styles.card}>
       {exercise.images[0] ? (
         <img
           className={styles.thumb}

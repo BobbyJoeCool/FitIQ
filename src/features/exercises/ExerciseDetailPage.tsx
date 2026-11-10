@@ -1,28 +1,11 @@
 import { Link, useParams } from 'react-router'
+import { BackLink } from '../../components/common/ReturnLink'
 import { ExerciseDetail } from '../../components/exercise/ExerciseDetail'
 import { LoadingScreen } from '../../components/common/LoadingScreen'
 import { StatusMessage } from '../../components/common/StatusMessage'
 import { useAsync } from '../../hooks/useAsync'
 import { getCatalogExercise } from '../../lib/data'
 import controls from '../../styles/controls.module.css'
-import styles from './exercises.module.css'
-
-export function BackToExercises() {
-  return (
-    <Link to=".." relative="path" className={styles.back} onClick={backIfPossible}>
-      ← Exercises
-    </Link>
-  )
-}
-
-/** Prefer history Back so the library's search and filters come back as they were. */
-function backIfPossible(event: React.MouseEvent) {
-  const state = window.history.state as { idx?: number } | null
-  if (state?.idx && state.idx > 0) {
-    event.preventDefault()
-    window.history.back()
-  }
-}
 
 export function ExerciseDetailPage() {
   const { exerciseId = '' } = useParams()
@@ -30,7 +13,7 @@ export function ExerciseDetailPage() {
 
   return (
     <section>
-      <BackToExercises />
+      <BackLink fallback="/exercises" fallbackLabel="Exercises" />
       {state.status === 'loading' && <LoadingScreen label="Loading exercise…" />}
       {state.status === 'error' && (
         <StatusMessage

@@ -115,6 +115,7 @@ plan.md section 18, mapped to steps: 1.1, 1.2, 1.3, 1.4 (deploy), 1.5 (Supabase 
 | 3.4 | #20 | Exercise search and filters | `ready-for-agent` | #18, #12 |
 | 3.5 | #21 | Exercise detail view with images and demo links | `ready-for-agent` | #20 |
 | 3.6 | #22 | Custom exercises | `ready-for-agent` | #20 |
+| 3.7 | #53 | Fix Back after editing a custom exercise (found in the Phase 3 manual test) | `ready-for-agent` | None |
 | 4.1 | #23 | Plan list and create or edit a plan | `ready-for-agent` | #14, #12 |
 | 4.2 | #24 | Add exercises to a plan with targets, rest, and notes | `ready-for-agent` | #23, #21 |
 | 4.3 | #25 | Reorder and archive plans | `ready-for-agent` | #24 |

@@ -1,16 +1,18 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useLocation, useParams } from 'react-router'
+import { BackLink } from '../../components/common/ReturnLink'
 import { ExerciseDetail } from '../../components/exercise/ExerciseDetail'
 import { LoadingScreen } from '../../components/common/LoadingScreen'
 import { StatusMessage } from '../../components/common/StatusMessage'
 import { useAsync } from '../../hooks/useAsync'
 import { getMyCustomExercise, setCustomExerciseArchived } from '../../lib/data'
 import controls from '../../styles/controls.module.css'
+import { returnState } from '../../hooks/useReturnTo'
 import { useAuth } from '../auth/AuthContext'
-import { BackToExercises } from './ExerciseDetailPage'
 
 export function CustomExerciseDetailPage() {
   const { id = '' } = useParams()
+  const location = useLocation()
   const { user } = useAuth()
   const userId = user?.id ?? ''
   const { state, setState, reload } = useAsync(
@@ -35,7 +37,7 @@ export function CustomExerciseDetailPage() {
 
   return (
     <section>
-      <BackToExercises />
+      <BackLink fallback="/exercises" fallbackLabel="Exercises" />
       {state.status === 'loading' && <LoadingScreen label="Loading exercise…" />}
       {state.status === 'error' && (
         <StatusMessage
@@ -61,7 +63,11 @@ export function CustomExerciseDetailPage() {
             exercise={state.data}
             actions={
               <>
-                <Link to="edit" className={controls.button}>
+                <Link
+                  to="edit"
+                  state={returnState(location, state.data.name)}
+                  className={controls.button}
+                >
                   Edit
                 </Link>
                 <button
