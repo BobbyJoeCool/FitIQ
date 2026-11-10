@@ -30,6 +30,7 @@ export function ExerciseLogger({
   weightUnit,
   distanceUnit,
   offline,
+  rest,
   onChange,
   onSkip,
   onPrevious,
@@ -43,6 +44,7 @@ export function ExerciseLogger({
   weightUnit: WeightUnit
   distanceUnit: DistanceUnit
   offline: boolean
+  rest: { remaining: number; onSkip: () => void } | null
   onChange: (item: SessionExercise) => void
   onSkip: (skipped: boolean) => Promise<void>
   onPrevious: (() => void) | null
@@ -176,6 +178,7 @@ export function ExerciseLogger({
           perSide={item.targets.perSide}
           submitLabel="Complete set"
           disabledReason={offlineReason}
+          rest={rest}
           onSubmit={addSet}
         />
       )}

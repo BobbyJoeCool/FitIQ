@@ -49,6 +49,7 @@
   padding: var(--space-4);
   padding-bottom: calc(var(--bottom-nav-height) + var(--space-5) + env(safe-area-inset-bottom));
   max-width: 960px;
+  min-width: 0;
 }
 
 .bottomNav {
@@ -86,7 +87,9 @@
 @media (min-width: 640px) {
   .shell {
     display: grid;
-    grid-template-columns: var(--sidebar-width) 1fr;
+    /* minmax(0, 1fr): a wide child (the workout's exercise strip) scrolls inside
+       the page instead of stretching it past the window. */
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   }
 
   .header,

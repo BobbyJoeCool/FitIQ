@@ -189,8 +189,13 @@ describe('logging sets', () => {
     expect(
       within(screen.getByRole('form', { name: 'Set 2 of 3' })).getByLabelText('Weight (lb)'),
     ).toHaveValue('140')
-    // The plan's 90 s rest starts.
-    expect(screen.getByRole('timer', { name: 'Rest timer' })).toHaveTextContent('Rest 1:30')
+    // The plan's 90 s rest starts, in place of Complete set, until it's skipped.
+    const next = screen.getByRole('form', { name: 'Set 2 of 3' })
+    expect(within(next).getByRole('timer', { name: 'Rest timer' })).toHaveTextContent('Rest 1:30')
+    expect(within(next).queryByRole('button', { name: 'Complete set' })).not.toBeInTheDocument()
+    await user.click(within(next).getByRole('button', { name: 'Skip rest' }))
+    expect(within(next).queryByRole('timer', { name: 'Rest timer' })).not.toBeInTheDocument()
+    expect(within(next).getByRole('button', { name: 'Complete set' })).toBeEnabled()
   })
 
   it('keeps what was typed when a save fails', async () => {

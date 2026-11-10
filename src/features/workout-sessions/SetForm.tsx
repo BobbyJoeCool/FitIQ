@@ -3,6 +3,7 @@ import type { SetInput } from '../../lib/data'
 import type { DistanceUnit, WeightUnit } from '../../lib/units'
 import controls from '../../styles/controls.module.css'
 import { buzz, useCountdown } from '../../hooks/useCountdown'
+import { formatDuration } from '../workout-plans/format'
 import { parseSet, toFields, type SetFields } from './setFields'
 import type { SetMode } from './workoutMath'
 import styles from './workout.module.css'
@@ -149,6 +150,7 @@ export function SetForm({
   perSide,
   submitLabel,
   disabledReason,
+  rest,
   onSubmit,
   onCancel,
 }: {
@@ -162,6 +164,8 @@ export function SetForm({
   submitLabel: string
   /** Set while saving isn't possible (offline); shown instead of submitting. */
   disabledReason?: string
+  /** While resting, the rest countdown takes the place of the submit button. */
+  rest?: { remaining: number; onSkip: () => void } | null
   onSubmit: (input: SetInput) => Promise<void>
   onCancel?: () => void
 }) {
@@ -263,14 +267,25 @@ export function SetForm({
         </p>
       )}
       <div className={styles.actions}>
-        <button
-          type="submit"
-          className={`${controls.primary} ${styles.complete}`}
-          disabled={saving || Boolean(disabledReason)}
-          style={{ flex: '1 1 12rem' }}
-        >
-          {saving ? 'Saving…' : submitLabel}
-        </button>
+        {rest ? (
+          <div className={styles.rest} role="timer" aria-label="Rest timer">
+            <span>
+              Rest <span className={styles.restTime}>{formatDuration(rest.remaining)}</span>
+            </span>
+            <button type="button" className={styles.skipRest} onClick={rest.onSkip}>
+              Skip rest
+            </button>
+          </div>
+        ) : (
+          <button
+            type="submit"
+            className={`${controls.primary} ${styles.complete}`}
+            disabled={saving || Boolean(disabledReason)}
+            style={{ flex: '1 1 12rem' }}
+          >
+            {saving ? 'Saving…' : submitLabel}
+          </button>
+        )}
         {onCancel && (
           <button type="button" className={controls.button} onClick={onCancel}>
             Cancel

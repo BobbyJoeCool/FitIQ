@@ -13,6 +13,7 @@
   --color-success: #15803d;
   --color-warning: #b45309;
   --color-danger: #b91c1c;
+  --color-on-danger: #ffffff;
   --color-focus: #2563eb;
 
   /* Spacing (4px scale) */
@@ -63,6 +64,7 @@
     --color-success: #4ade80;
     --color-warning: #fbbf24;
     --color-danger: #f87171;
+    --color-on-danger: #2a0606;
     --shadow-sm: none;
   }
 }
