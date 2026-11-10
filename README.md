@@ -14,6 +14,7 @@ React, TypeScript, and Vite on GitHub Pages; Supabase Auth and PostgreSQL with R
 
 - [`plan.md`](plan.md): product and technical plan
 - [`docs/exercise-sources.md`](docs/exercise-sources.md): exercise data license, the pinned dataset commit, and field mapping
+- [`docs/accounts.md`](docs/accounts.md): adding, resetting, and removing family accounts
 - [`docs/future-versions.md`](docs/future-versions.md): upgrades planned after v1
 - [`docs/adr/`](docs/adr/): architecture decisions, starting with delete behavior per table
 - [`docs/build-plan.md`](docs/build-plan.md): phased build plan, one GitHub issue per step (tracked in [#1](https://github.com/BobbyJoeCool/FitIQ/issues/1))
@@ -76,7 +77,7 @@ Run it against the hosted project before every rollout, and never put real famil
 3. **Repo variables** (Settings > Secrets and variables > Actions > Variables, not secrets, since both values are public): `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. The deploy and keep-alive workflows read them.
 4. **GitHub Pages:** Settings > Pages > Source: *GitHub Actions*.
 5. **Custom domain:** add a DNS `CNAME` record `fitiq` → `bobbyjoecool.github.io`, then set `fitiq.bobbyjoecool.dev` as the custom domain in Settings > Pages and tick *Enforce HTTPS*. The deploy workflow picks up the base path from the Pages settings, so the build works at `bobbyjoecool.github.io/FitIQ/` before the domain is set and at `/` after; re-run the deploy once the domain changes.
-6. **Accounts:** invite each person from Authentication > Users. A profile row is created automatically with imperial units.
+6. **Accounts:** follow [`docs/accounts.md`](docs/accounts.md). Supabase's built-in email only reaches your own team, so the default is to create each account with a temporary password. A profile row is created automatically with imperial units.
 
 ### Deploys and keep-alive
 
