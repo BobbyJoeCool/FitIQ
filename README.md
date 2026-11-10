@@ -4,7 +4,7 @@ A private workout and progress tracker for my household: exercise library with d
 
 **Live:** [fitiq.bobbyjoecool.dev](https://fitiq.bobbyjoecool.dev) (invite-only; goes live once the hosted setup below is done)
 
-**Status:** first sprint: app shell, sign-in, and private profiles. Screenshots and a demo GIF will go here once v1 works.
+**Status:** app shell, sign-in, private profiles, the exercise library, and workout plans. Screenshots and a demo GIF will go here once v1 works.
 
 ## Stack
 
@@ -14,6 +14,8 @@ React, TypeScript, and Vite on GitHub Pages; Supabase Auth and PostgreSQL with R
 
 - [`plan.md`](plan.md): product and technical plan
 - [`docs/exercise-sources.md`](docs/exercise-sources.md): exercise data license, the pinned dataset commit, and field mapping
+- [`docs/future-versions.md`](docs/future-versions.md): upgrades planned after v1
+- [`docs/adr/`](docs/adr/): architecture decisions, starting with delete behavior per table
 - [`docs/build-plan.md`](docs/build-plan.md): phased build plan, one GitHub issue per step (tracked in [#1](https://github.com/BobbyJoeCool/FitIQ/issues/1))
 
 ## Setup

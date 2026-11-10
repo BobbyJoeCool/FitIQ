@@ -5,6 +5,7 @@ import { LoadingScreen } from '../../components/common/LoadingScreen'
 import { StatusMessage } from '../../components/common/StatusMessage'
 import { useAsync } from '../../hooks/useAsync'
 import { getCatalogExercise } from '../../lib/data'
+import { AddToPlan } from '../workout-plans/AddToPlan'
 import controls from '../../styles/controls.module.css'
 
 export function ExerciseDetailPage() {
@@ -30,7 +31,7 @@ export function ExerciseDetailPage() {
       )}
       {state.status === 'ready' &&
         (state.data ? (
-          <ExerciseDetail exercise={state.data} />
+          <ExerciseDetail exercise={state.data} actions={<AddToPlan exercise={state.data} />} />
         ) : (
           <StatusMessage title="Exercise not found">
             It may have been renamed. <Link to="/exercises">Search the library</Link>.

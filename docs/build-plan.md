@@ -44,6 +44,8 @@ Goal: Reusable plans: create, edit, add exercises with targets, rest, and notes,
 
 Done when: A user can save a reusable routine.
 
+`workout_plans` and `workout_plan_exercises` (with RLS, an ownership trigger, a reorder function, and rows in the RLS test) were pulled forward from 2.5 so Phase 4 could ship before the rest of the schema. Their delete behavior is in [ADR 0001](adr/0001-delete-behavior.md).
+
 ### Phase 5 — Workout recording
 
 Goal: Start a workout, log sets on a phone with per-set saving, skip, finish, and review it in history.
@@ -106,7 +108,7 @@ plan.md section 18, mapped to steps: 1.1, 1.2, 1.3, 1.4 (deploy), 1.5 (Supabase 
 | 2.2 | #11 | Profiles table with RLS | `ready-for-agent` | #10 |
 | 2.3 | #12 | Sign-in, sign-out, and protected routes | `ready-for-agent` | #11 |
 | 2.4 | #13 | Invite links: set-password page and owner runbook | `ready-for-agent` | #12 |
-| 2.5 | #14 | Full v1 schema with constraints, ownership triggers, and RLS (`custom_exercises` already landed with 3.6) | `ready-for-agent` | #11, #2 |
+| 2.5 | #14 | Full v1 schema with constraints, ownership triggers, and RLS (`custom_exercises` already landed with 3.6; `workout_plans` and `workout_plan_exercises` with Phase 4) | `ready-for-agent` | #11, #2 |
 | 2.6 | #15 | Two-account RLS test script | `ready-for-agent` | #14 |
 | 2.7 | #16 | Create two test accounts and pass the RLS test | `ready-for-human` | #13, #15 |
 | 3.1 | #17 | Record the Free Exercise DB license and pin a dataset commit | `ready-for-agent` | None |

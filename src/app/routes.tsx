@@ -9,6 +9,9 @@ import { ExerciseDetailPage } from '../features/exercises/ExerciseDetailPage'
 import { ExercisesPage } from '../features/exercises/ExercisesPage'
 import { ProgressPage } from '../features/progress/ProgressPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
+import { AddExercisesPage } from '../features/workout-plans/AddExercisesPage'
+import { PlanBuilderPage } from '../features/workout-plans/PlanBuilderPage'
+import { PlanFormPage } from '../features/workout-plans/PlanFormPage'
 import { PlansPage } from '../features/workout-plans/PlansPage'
 import { WorkoutPage } from '../features/workout-sessions/WorkoutPage'
 import { AppShell } from './AppShell'
@@ -30,6 +33,10 @@ export const routes: RouteObject[] = [
       { path: 'exercises/custom/:id/edit', element: <CustomExerciseFormPage /> },
       { path: 'exercises/:exerciseId', element: <ExerciseDetailPage /> },
       { path: 'plans', element: <PlansPage /> },
+      { path: 'plans/new', element: <PlanFormPage /> },
+      { path: 'plans/:id', element: <PlanBuilderPage /> },
+      { path: 'plans/:id/edit', element: <PlanFormPage /> },
+      { path: 'plans/:id/add', element: <AddExercisesPage /> },
       { path: 'workout', element: <WorkoutPage /> },
       { path: 'progress', element: <ProgressPage /> },
       { path: 'cardio', element: <CardioPage /> },

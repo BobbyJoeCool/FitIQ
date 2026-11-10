@@ -112,7 +112,7 @@ A code license does not automatically cover images or videos. If rights are uncl
 
 ### Library features
 
-Search by name. Filter by muscle, equipment, movement type, and difficulty. Detail view with instructions, images, optional video, and Add to Workout. Custom exercises. Exercises with no media are clearly marked.
+Search by name. Filter by muscle, equipment, movement type, and difficulty. Detail view with instructions, images, optional video, and Add to Plan (adds the exercise to one of your plans; starting a workout is Phase 5). Custom exercises. Exercises with no media are clearly marked.
 
 ## 8. Data model
 
@@ -239,7 +239,7 @@ Each phase ends with something working and deployed.
 |---|---|
 | Must | Individual sign-in, private records, exercise search and detail, exercise images or demo links, plans, set logging, workout history, weight history, mobile layout, installable PWA |
 | Should | Body measurements, cardio and walking pad, CSV export |
-| Later | Offline logging with sync, family sharing and challenges, nutrition, wearables, self-hosted backend move (needs public HTTPS access, section 5), importing the exercise catalog into Postgres |
+| Later | Offline logging with sync, family sharing and challenges, nutrition, wearables, self-hosted backend move (needs public HTTPS access, section 5), importing the exercise catalog into Postgres. Tracked in [`docs/future-versions.md`](docs/future-versions.md), with a stretching upgrade added 2026-11-09 |
 
 ## 16. Risks
 

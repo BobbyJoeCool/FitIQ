@@ -1,18 +1,13 @@
 import { useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 import { ExerciseCard } from '../../components/exercise/ExerciseCard'
+import { FilterSelect } from '../../components/exercise/FilterSelect'
 import { LoadingScreen } from '../../components/common/LoadingScreen'
 import { StatusMessage } from '../../components/common/StatusMessage'
 import { useAsync } from '../../hooks/useAsync'
 import { returnState } from '../../hooks/useReturnTo'
 import { loadExerciseLibrary } from '../../lib/data'
-import {
-  DIFFICULTIES,
-  EQUIPMENT,
-  MOVEMENT_TYPES,
-  MUSCLES,
-  vocabLabel,
-} from '../../lib/exerciseVocabulary'
+import { DIFFICULTIES, EQUIPMENT, MOVEMENT_TYPES, MUSCLES } from '../../lib/exerciseVocabulary'
 import controls from '../../styles/controls.module.css'
 import { useAuth } from '../auth/AuthContext'
 import {
@@ -46,32 +41,6 @@ function writeFilters(filters: ExerciseFilters): URLSearchParams {
   if (filters.difficulty) params.set('difficulty', filters.difficulty)
   if (filters.showArchived) params.set('archived', '1')
   return params
-}
-
-function FilterSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string
-  value: string
-  options: readonly string[]
-  onChange: (value: string) => void
-}) {
-  return (
-    <label className={controls.field}>
-      {label}
-      <select className={controls.input} value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">Any</option>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {vocabLabel(option)}
-          </option>
-        ))}
-      </select>
-    </label>
-  )
 }
 
 export function ExercisesPage() {

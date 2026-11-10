@@ -1,4 +1,4 @@
-import type { CustomExerciseInput } from './data'
+import type { CustomExerciseInput, PlanInput, PlanTargets } from './data'
 import { DIFFICULTIES, EQUIPMENT, MOVEMENT_TYPES, MUSCLES } from './exerciseVocabulary'
 
 /**
@@ -25,6 +25,12 @@ export const LIMITS = {
   descriptionMax: 2000,
   videoUrlMax: 500,
   videoSourceNameMax: 80,
+  planNameMax: 80,
+  planDescriptionMax: 1000,
+  targetSetsMax: 20,
+  targetRepsMax: 20,
+  restSecondsMax: 3600,
+  planNotesMax: 500,
 } as const
 
 const blankToNull = (value: string) => (value.trim() ? value.trim() : null)
@@ -92,5 +98,76 @@ export function validateCustomExercise(
       videoUrl,
       videoSourceName: videoUrl ? videoSourceName : null,
     },
+  }
+}
+
+export interface PlanForm {
+  name: string
+  description: string
+}
+
+export type PlanErrors = Partial<Record<keyof PlanForm, string>>
+
+export function validatePlan(
+  form: PlanForm,
+): { ok: true; value: PlanInput } | { ok: false; errors: PlanErrors } {
+  const errors: PlanErrors = {}
+  const name = form.name.trim()
+  const description = blankToNull(form.description)
+  if (!name) errors.name = 'Give the plan a name.'
+  else if (name.length > LIMITS.planNameMax)
+    errors.name = `Keep the name under ${LIMITS.planNameMax + 1} characters.`
+  if (description && description.length > LIMITS.planDescriptionMax) {
+    errors.description = `Keep the description under ${LIMITS.planDescriptionMax + 1} characters.`
+  }
+  if (Object.keys(errors).length) return { ok: false, errors }
+  return { ok: true, value: { name, description } }
+}
+
+/** The targets form holds text, as typed, so half-typed numbers can be reported. */
+export interface TargetsForm {
+  targetSets: string
+  targetReps: string
+  restSeconds: string
+  notes: string
+}
+
+export type TargetsErrors = Partial<Record<keyof TargetsForm, string>>
+
+const wholeNumber = (value: string) => (/^\d+$/.test(value) ? Number(value) : NaN)
+
+export function validateTargets(
+  form: TargetsForm,
+): { ok: true; value: PlanTargets } | { ok: false; errors: TargetsErrors } {
+  const errors: TargetsErrors = {}
+  const setsText = form.targetSets.trim()
+  const restText = form.restSeconds.trim()
+  const targetReps = blankToNull(form.targetReps)
+  const notes = blankToNull(form.notes)
+
+  const targetSets = setsText ? wholeNumber(setsText) : null
+  if (targetSets !== null && !(targetSets >= 1 && targetSets <= LIMITS.targetSetsMax)) {
+    errors.targetSets = `Use a whole number from 1 to ${LIMITS.targetSetsMax}.`
+  }
+  if (targetReps && targetReps.length > LIMITS.targetRepsMax) {
+    errors.targetReps = `Keep this under ${LIMITS.targetRepsMax + 1} characters, e.g. 8-12.`
+  }
+  const restSeconds = restText ? wholeNumber(restText) : null
+  if (restSeconds !== null && !(restSeconds >= 0 && restSeconds <= LIMITS.restSecondsMax)) {
+    errors.restSeconds = `Use whole seconds from 0 to ${LIMITS.restSecondsMax}.`
+  }
+  if (notes && notes.length > LIMITS.planNotesMax) {
+    errors.notes = `Keep notes under ${LIMITS.planNotesMax + 1} characters.`
+  }
+  if (Object.keys(errors).length) return { ok: false, errors }
+  return { ok: true, value: { targetSets, targetReps, restSeconds, notes } }
+}
+
+export function targetsToForm(targets: PlanTargets): TargetsForm {
+  return {
+    targetSets: targets.targetSets?.toString() ?? '',
+    targetReps: targets.targetReps ?? '',
+    restSeconds: targets.restSeconds?.toString() ?? '',
+    notes: targets.notes ?? '',
   }
 }

@@ -12,17 +12,38 @@
  * Uses only the publishable key: it tests what a browser can do.
  *
  * Step 2.6 adds every table from the full schema (2.5) to TABLES.
+ * Child tables also get `crossChecks`: pointing your own row at the other
+ * user's parent row (plan, exercise) must fail too, which owner-only RLS
+ * alone doesn't guarantee.
  */
 import { createClient } from '@supabase/supabase-js'
 
 const MARKER = 'rls-test-intrusion'
 
+/** IDs of each user's own rows, filled in by ensureOwnRow: owned[table][userId]. */
+const owned = {}
+const remember = (table, userId, id) => {
+  owned[table] ??= {}
+  owned[table][userId] = id
+}
+
+/** Return the ID of one of the user's rows in `table`, inserting `row` if there are none. */
+async function ensureRow(client, userId, table, row) {
+  const { data, error } = await client.from(table).select('id').eq('user_id', userId).limit(1)
+  if (error) throw new Error(`${table}: ${error.message}`)
+  if (data.length) return remember(table, userId, data[0].id)
+  const insert = await client.from(table).insert(row).select('id').single()
+  if (insert.error) throw new Error(`${table} insert: ${insert.error.message}`)
+  remember(table, userId, insert.data.id)
+}
+
 /**
- * One entry per user-owned table.
+ * One entry per user-owned table, parents before children.
  * - owner: column holding the owning user's ID
  * - intrusion: values for an update attempt on the other user's rows
  * - foreignInsert(otherUserId): a row that claims to belong to the other user
  * - ensureOwnRow(client, userId): make sure the user has at least one row
+ * - crossChecks(me, other): optional extra checks for child tables
  */
 const TABLES = [
   {
@@ -42,18 +63,114 @@ const TABLES = [
       name: MARKER,
       primary_muscles: ['chest'],
     }),
+    ensureOwnRow: (client, userId) =>
+      ensureRow(client, userId, 'custom_exercises', {
+        name: 'RLS test exercise',
+        primary_muscles: ['chest'],
+        is_archived: true,
+      }),
+  },
+  {
+    name: 'workout_plans',
+    owner: 'user_id',
+    intrusion: { name: MARKER },
+    foreignInsert: (otherUserId) => ({ user_id: otherUserId, name: MARKER }),
+    ensureOwnRow: (client, userId) =>
+      ensureRow(client, userId, 'workout_plans', { name: 'RLS test plan', is_archived: true }),
+  },
+  {
+    name: 'workout_plan_exercises',
+    owner: 'user_id',
+    intrusion: { notes: MARKER },
+    foreignInsert: (otherUserId) => ({
+      user_id: otherUserId,
+      plan_id: owned.workout_plans[otherUserId],
+      catalog_exercise_id: 'Barbell_Squat',
+      sort_order: 0,
+    }),
     ensureOwnRow: async (client, userId) => {
+      const planId = owned.workout_plans[userId]
       const { data, error } = await client
-        .from('custom_exercises')
+        .from('workout_plan_exercises')
         .select('id')
-        .eq('user_id', userId)
+        .eq('plan_id', planId)
+      if (error) throw new Error(`workout_plan_exercises: ${error.message}`)
+      if (data.length < 2) {
+        // Two rows, one of each exercise kind, so the reorder check means something.
+        const insert = await client.from('workout_plan_exercises').insert([
+          { plan_id: planId, catalog_exercise_id: 'Barbell_Squat', sort_order: 0 },
+          {
+            plan_id: planId,
+            custom_exercise_id: owned.custom_exercises[userId],
+            sort_order: 1,
+          },
+        ])
+        if (insert.error) throw new Error(`workout_plan_exercises insert: ${insert.error.message}`)
+      }
+    },
+    crossChecks: async (me, other) => {
+      const tag = `workout_plan_exercises [${me.label} -> ${other.label}]`
+      const myPlan = owned.workout_plans[me.id]
+      const theirPlan = owned.workout_plans[other.id]
+      const theirOrder = async () => {
+        const { data, error } = await other.client
+          .from('workout_plan_exercises')
+          .select('id, sort_order, plan_id')
+          .eq('plan_id', theirPlan)
+          .order('id')
+        if (error) throw new Error(`${other.label} cannot read own plan: ${error.message}`)
+        return data
+      }
+      const before = await theirOrder()
+
+      const intoTheirPlan = await me.client
+        .from('workout_plan_exercises')
+        .insert({ plan_id: theirPlan, catalog_exercise_id: 'Barbell_Squat', sort_order: 9 })
+        .select()
+      check(!!intoTheirPlan.error, `${tag} cannot add an exercise to the other user's plan`)
+
+      const theirExercise = await me.client
+        .from('workout_plan_exercises')
+        .insert({
+          plan_id: myPlan,
+          custom_exercise_id: owned.custom_exercises[other.id],
+          sort_order: 9,
+        })
+        .select()
+      check(!!theirExercise.error, `${tag} cannot use the other user's custom exercise`)
+
+      const mine = await me.client
+        .from('workout_plan_exercises')
+        .select('id')
+        .eq('plan_id', myPlan)
         .limit(1)
-      if (error) throw new Error(`custom_exercises: ${error.message}`)
-      if (data.length) return
-      const insert = await client
-        .from('custom_exercises')
-        .insert({ name: 'RLS test exercise', primary_muscles: ['chest'], is_archived: true })
-      if (insert.error) throw new Error(`custom_exercises insert: ${insert.error.message}`)
+        .single()
+      const move = await me.client
+        .from('workout_plan_exercises')
+        .update({ plan_id: theirPlan })
+        .eq('id', mine.data?.id)
+        .select()
+      check(
+        !!move.error || move.data.length === 0,
+        `${tag} cannot move own exercise into the other user's plan`,
+      )
+
+      const reorder = await me.client.rpc('reorder_plan_exercises', {
+        p_plan_id: theirPlan,
+        p_ids: before.map((row) => row.id).reverse(),
+      })
+      const after = await theirOrder()
+      check(
+        !!reorder.error && JSON.stringify(after) === JSON.stringify(before),
+        `${tag} cannot reorder the other user's plan`,
+      )
+
+      // Clean up anything that leaked so reruns stay meaningful.
+      for (const leaked of [intoTheirPlan, theirExercise]) {
+        if (!leaked.error && leaked.data?.length) {
+          await me.client.from('workout_plan_exercises').delete().eq('id', leaked.data[0].id)
+        }
+      }
     },
   },
 ]
@@ -176,6 +293,10 @@ async function main() {
     await table.ensureOwnRow(b.client, b.id)
     await checkTable(table, a, b)
     await checkTable(table, b, a)
+    if (table.crossChecks) {
+      await table.crossChecks(a, b)
+      await table.crossChecks(b, a)
+    }
     await checkAnonymous(table)
   }
 
