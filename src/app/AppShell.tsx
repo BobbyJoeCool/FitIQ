@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet } from 'react-router'
 import { OfflineBanner } from '../components/common/OfflineBanner'
 import { ProfileProvider } from '../features/profile/ProfileProvider'
 import { NAV_ITEMS } from './navigation'
-import { SidebarSlotContext } from './SidebarSlot'
+import { SidebarSlotContext } from './sidebarSlotContext'
 import styles from './AppShell.module.css'
 
 function linkClass(base: string) {
