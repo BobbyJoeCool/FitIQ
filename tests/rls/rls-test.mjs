@@ -64,6 +64,10 @@ const env = (name) => {
     console.error(`Missing ${name}. Copy tests/rls/.env.example to tests/rls/.env and fill it in.`)
     process.exit(2)
   }
+  if (/your-project-ref|x{8,}/.test(value)) {
+    console.error(`${name} still has the placeholder from .env.example. Fill in tests/rls/.env.`)
+    process.exit(2)
+  }
   return value
 }
 
