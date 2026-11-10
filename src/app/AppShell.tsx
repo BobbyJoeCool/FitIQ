@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router'
 import { OfflineBanner } from '../components/common/OfflineBanner'
 import { ProfileProvider } from '../features/profile/ProfileProvider'
 import { NAV_ITEMS } from './navigation'
+import { SidebarSlotContext } from './SidebarSlot'
 import styles from './AppShell.module.css'
 
 function linkClass(base: string) {
@@ -11,6 +13,7 @@ function linkClass(base: string) {
 export function AppShell() {
   const bottomItems = NAV_ITEMS.filter((item) => item.inBottomBar)
   const headerItems = NAV_ITEMS.filter((item) => !item.inBottomBar)
+  const [slot, setSlot] = useState<HTMLElement | null>(null)
 
   return (
     <div className={styles.shell}>
@@ -41,12 +44,15 @@ export function AppShell() {
             {item.label}
           </NavLink>
         ))}
+        <div ref={setSlot} className={styles.sideAction} />
       </nav>
 
       <main className={styles.main}>
         <OfflineBanner />
         <ProfileProvider>
-          <Outlet />
+          <SidebarSlotContext.Provider value={slot}>
+            <Outlet />
+          </SidebarSlotContext.Provider>
         </ProfileProvider>
       </main>
 

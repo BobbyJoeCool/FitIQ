@@ -136,4 +136,15 @@
   .main {
     padding: var(--space-6);
   }
+
+  /* A page's main action (e.g. the exercise picker's Done) sits under the links. */
+  .sideAction {
+    display: grid;
+    margin-top: var(--space-4);
+    padding: 0 var(--space-1);
+  }
+
+  .sideAction:empty {
+    display: none;
+  }
 }

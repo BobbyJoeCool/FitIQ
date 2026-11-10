@@ -294,12 +294,6 @@
   margin-top: var(--space-4);
 }
 
-@media (min-width: 900px) {
-  .stickyDone {
-    bottom: var(--space-4);
-  }
-}
-
 /* Add to plan (exercise detail) */
 
 .panel {

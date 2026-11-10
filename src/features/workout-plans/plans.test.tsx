@@ -310,6 +310,23 @@ describe('add exercises to a plan', () => {
     expect(router.state.historyAction).toBe('POP')
   })
 
+  it('puts Done in the side navigation on wider screens', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string) =>
+        ({
+          matches: query === '(min-width: 640px)',
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList,
+    )
+    renderRoute(`/plans/${PLAN_ID}/add`)
+    const sideNav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(await within(sideNav).findByRole('link', { name: 'Done' })).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'Done' })).toHaveLength(1)
+    vi.unstubAllGlobals()
+  })
+
   it('adds a custom exercise by its ID', async () => {
     vi.mocked(data.addExerciseToPlan).mockResolvedValue(item('new'))
     const user = userEvent.setup()
