@@ -31,6 +31,7 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 | FV-6 | [Delete plans that no workout uses](#fv-6-delete-plans-that-no-workout-uses) | Idea | Phase 5 sessions |
 | FV-7 | [Programs: training by day, by rotation or weekly schedule](#fv-7-programs-training-by-day-by-rotation-or-weekly-schedule) | Proposed | Phase 4 (done); best before Phase 5 and 6.5 |
 | FV-9 | [Email sender on bobbyjoecool.dev](#fv-9-email-sender-on-bobbyjoecooldev) | Proposed | None |
+| FV-10 | [Cardio in workout plans](#fv-10-cardio-in-workout-plans) | Proposed | Phases 4, 5 and 7 (done) |
 | FV-8 | [Not planned: nutrition, wearables, AI plans, native apps](#fv-8-not-planned) | Not planned | None |
 
 ## Upgrades
@@ -304,6 +305,22 @@ Both modes:
   - Update `docs/accounts.md` to make option B the default, and test invite, reset, and expired-link handling on the live site.
 - **Depends on:** none. SMTP is a standard setting, so it carries over to a self-hosted backend (FV-3).
 - **Data and security:** no schema change. The SMTP password lives only in the Supabase dashboard and the owner's password manager, never in the repo. Rate limits on reset emails stay on.
+- **Source:** Bob, 2026-11-10.
+
+### FV-10. Cardio in workout plans
+
+- **Status:** Proposed (requested 2026-11-10)
+- **Why:** a real session often mixes lifting and cardio, like a 10-minute walking pad warm-up before Leg Day or a bike finisher. Today cardio lives on its own Cardio tab. Catalog cardio exercises can go into a plan and are logged in the workout as time and distance sets, but the plan can't hold a cardio target, there's no walking pad preset or incline, and those sets never show up on the Cardio tab or in its weekly totals.
+- **What:**
+  - A plan can include a **cardio item**: an activity (walking pad, walk, run, bike, and so on, the same list as the Cardio tab) with target minutes, and optionally distance and incline. It sits in the plan's order like any exercise, so it can be a warm-up, in the middle, or a finisher.
+  - In the workout, the cardio item shows its target and a timer, with the walking pad preset filling minutes, incline, and distance unit. Completing it saves one entry.
+  - That entry counts everywhere cardio counts: the Cardio tab's history and weekly tiles, the dashboard's Recent cardio, and the cardio CSV, linked back to the workout it came from. It isn't counted twice.
+  - The workout's finish review and detail page show the cardio item with its time and distance.
+- **Depends on:** Phase 4 plans, Phase 5 workouts, Phase 7 cardio (all done).
+- **Data and security** (a sketch, to settle when it's scheduled):
+  - `workout_plan_exercises` gains a way to hold a cardio item and its targets (for example `cardio_activity`, `target_minutes`, `target_distance`, `target_incline`, with CHECKs that it's either an exercise or a cardio item).
+  - `cardio_sessions` gains a nullable `workout_session_id` (set null if the workout is deleted), so a cardio entry made in a workout is the single record, rather than a set plus a separate cardio row.
+  - RLS is unchanged in shape, since both tables are owner-only. The ownership trigger must make sure the linked workout belongs to the same user, and the RLS test gets the cross-parent check. ADR 0001 notes what happens to the cardio entry when its workout is deleted.
 - **Source:** Bob, 2026-11-10.
 
 ### FV-8. Not planned
