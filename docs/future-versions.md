@@ -35,6 +35,7 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 | FV-11 | [Default rest, with per-exercise overrides](#fv-11-default-rest-with-per-exercise-overrides) | Proposed | Phases 4 and 5 (done) |
 | FV-12 | [Hold at the top, with a 3-second default release](#fv-12-hold-at-the-top-with-a-3-second-default-release) | Proposed | 1.1.0 repeated holds (done) |
 | FV-13 | [Save workout edits back to the plan](#fv-13-save-workout-edits-back-to-the-plan) | Proposed | Phases 4 and 5 (done) |
+| FV-14 | [Sound and voice cues for the hold timer](#fv-14-sound-and-voice-cues-for-the-hold-timer) | Proposed | 1.1.0 hold timer (done) |
 | FV-8 | [Not planned: nutrition, wearables, AI plans, native apps](#fv-8-not-planned) | Not planned | None |
 
 ## Upgrades
@@ -377,6 +378,30 @@ Both modes:
   - `workout_session_exercises` needs a link back to its plan exercise (a nullable `plan_exercise_id`, set null if the plan exercise is removed), set by `start_workout`, so an edit knows which plan row to update.
   - Session targets become editable: column `update` grants for the target columns on `workout_session_exercises`, which aren't granted today.
   - Saving to the plan is an ordinary update through `src/lib/data/plans.ts`, so RLS and the ownership triggers apply as they do now. The RLS test gets a case that a workout can't change another user's plan through the link.
+- **Source:** Bob, 2026-11-10.
+
+### FV-14. Sound and voice cues for the hold timer
+
+- **Status:** Proposed (requested 2026-11-10)
+- **Why:** during a stretch or a hold you're not looking at the screen. Today the timer only vibrates, and only on Android: iPhones ignore vibration, so an iPhone user gets no cue at all when a hold ends or it's time to switch sides.
+- **What:**
+  - **A soft 3, 2, 1 countdown** before each change: three short, quiet tones in the last three seconds of a hold, release, or switch pause. They're gentle sine tones with a slow fade in and out, not a beep or an alarm, and generated in the browser, so there are no audio files.
+  - **Spoken cues** from the phone's built-in voice (the browser's text-to-speech), at a calm rate and moderate volume:
+    - "Stretch" or "Hold" as a hold starts, and "First side" / "Second side" for per-side holds
+    - "Release" between repeated holds (1.1.0, and FV-12), then "Hold" again
+    - "Switch" at the switch-sides pause
+    - "Two more", "Last one" near the end of repeated holds
+    - "Done" at the end of the set
+    - Optionally "Rest" and "Rest over" for the rest timer between sets
+  - **Settings → Sound:** voice on or off, tones on or off, and a volume level. Saved per device rather than per account, since the right choice depends on the phone and where you're working out. Vibration stays where it's supported.
+  - The cues follow the timer steps already built in `src/features/workout-sessions/timerSteps.ts`, so each step kind maps to a phrase.
+- **Decided:** use the device's built-in voice, not recorded clips. It's free, works offline, and phrases can change without new recordings. It sounds a little different on iPhone and Android.
+- **Things to check when it's built:**
+  - iPhone Safari only allows sound after a tap, so tapping **Start timer** has to unlock audio and speech for the rest of the set.
+  - Cues should mix with the user's own music rather than pause it, where the browser allows.
+  - When the screen locks, the browser may pause sound; the workout screen already keeps the screen awake (`useWakeLock`) where the browser supports it, which should cover most cases.
+- **Depends on:** 1.1.0's hold timer (done).
+- **Data and security:** none. No schema change; the sound settings live in the browser's local storage, with the app working the same if it's unavailable.
 - **Source:** Bob, 2026-11-10.
 
 ### FV-8. Not planned
