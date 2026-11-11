@@ -33,6 +33,8 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 | FV-9 | [Email sender on bobbyjoecool.dev](#fv-9-email-sender-on-bobbyjoecooldev) | Proposed | None |
 | FV-10 | [Cardio in workout plans](#fv-10-cardio-in-workout-plans) | Proposed | Phases 4, 5 and 7 (done) |
 | FV-11 | [Default rest, with per-exercise overrides](#fv-11-default-rest-with-per-exercise-overrides) | Proposed | Phases 4 and 5 (done) |
+| FV-12 | [Hold at the top, with a 3-second default release](#fv-12-hold-at-the-top-with-a-3-second-default-release) | Proposed | 1.1.0 repeated holds (done) |
+| FV-13 | [Save workout edits back to the plan](#fv-13-save-workout-edits-back-to-the-plan) | Proposed | Phases 4 and 5 (done) |
 | FV-8 | [Not planned: nutrition, wearables, AI plans, native apps](#fv-8-not-planned) | Not planned | None |
 
 ## Upgrades
@@ -342,6 +344,39 @@ Both modes:
   - `workout_plan_exercises` gains `rest_mode` (`default` | `offset` | `fixed`) and `rest_offset_seconds`. Existing rows become `fixed` with their current `rest_seconds`; rows with no rest become `default`.
   - When a workout starts, `start_workout` resolves the rest to plain seconds and copies it into `workout_session_exercises.rest_seconds`, as now, so changing a default later never changes past workouts.
   - No new tables. RLS is unchanged in shape, since profiles, plans and plan exercises are already owner-only.
+- **Source:** Bob, 2026-11-10.
+
+### FV-12. Hold at the top, with a 3-second default release
+
+- **Status:** Proposed (requested 2026-11-10)
+- **Why:** 1.1.0 added repeated holds (hold, release, repeat, #67), but the release time has to be typed for every exercise, and it's the only way to say the exercise has a hold at all. Most hold-at-the-top exercises (ab roller, glute bridge, a paused pull-up) use about the same short release to get back into position.
+- **What:**
+  - Edit targets gets a **Hold at the top of each rep** checkbox. Only exercises with it ticked use the repeated-hold timer and a release time. Every other exercise works as it does now, with no release.
+  - When ticked, the release defaults to **3 seconds**. The Release (sec) field shows the default and can be changed per exercise to override it.
+  - The timer and the set logging work as in 1.1.0: Reps holds of Hold seconds with the release between them, logged as reps.
+  - Optional: make the 3-second default itself a setting in Settings, if 3 s doesn't suit everyone.
+- **Depends on:** 1.1.0's repeated holds (done).
+- **Data and security** (a sketch, to settle when it's scheduled):
+  - `workout_plan_exercises` gains `hold_at_top boolean not null default false`, copied into `workout_session_exercises` by `start_workout`. A null `target_release_seconds` with `hold_at_top` set means "use the default", resolved to 3 s when the workout starts, so past workouts keep the release they used.
+  - Existing rows with a release time become `hold_at_top = true`, so plans set up in 1.1.0 behave the same.
+  - RLS unchanged: both tables are already owner-only.
+- **Source:** Bob, 2026-11-10.
+
+### FV-13. Save workout edits back to the plan
+
+- **Status:** Proposed (requested 2026-11-10)
+- **Why:** a workout copies its plan's targets when it starts, so changes made during the workout stay in that workout. If you find mid-workout that the hold should be 45 s, a stretch shouldn't be per side, or an exercise you added belongs in the plan, you have to remember to go and edit the plan afterwards.
+- **What:**
+  - During a workout, each exercise gets **Edit targets**, the same form as on the plan: sets, reps, rest, hold, release, each side, and notes. Today only the Each side toggle and the per-set fields can change mid-workout.
+  - Every edit made during a workout offers **Also change the plan**, off by default. Without it, the change applies to this workout only, as today. With it, the same change is saved to the plan exercise the workout came from.
+  - The Each side toggle and the Seconds field on a timed set offer the same choice, so a hold time that's changed mid-set can become the plan's new target.
+  - An exercise added mid-workout offers **Add to the plan too**, which adds it at the end of the plan. Skipping an exercise doesn't change the plan.
+  - Only the plan this workout started from can change. An empty workout (no plan) has no option, and past workouts are never changed.
+- **Depends on:** Phases 4 and 5 (done).
+- **Data and security** (a sketch, to settle when it's scheduled):
+  - `workout_session_exercises` needs a link back to its plan exercise (a nullable `plan_exercise_id`, set null if the plan exercise is removed), set by `start_workout`, so an edit knows which plan row to update.
+  - Session targets become editable: column `update` grants for the target columns on `workout_session_exercises`, which aren't granted today.
+  - Saving to the plan is an ordinary update through `src/lib/data/plans.ts`, so RLS and the ownership triggers apply as they do now. The RLS test gets a case that a workout can't change another user's plan through the link.
 - **Source:** Bob, 2026-11-10.
 
 ### FV-8. Not planned

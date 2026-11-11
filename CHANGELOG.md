@@ -9,6 +9,8 @@ Planned or wanted after v1. Details, dependencies, and status for each are in [`
 - **Email sender on `bobbyjoecool.dev`** (FV-9): send invite and password reset emails from the site's own domain, so family members can be invited by email and reset their own passwords.
 - **Cardio in workout plans** (FV-10): add a cardio item, like a walking pad warm-up, to a plan with target minutes, distance, and incline. It's logged during the workout and shows on the Cardio tab.
 - **Default rest** (FV-11): set a default rest period in Settings or per plan, used between sets and between exercises. Each exercise follows the default, adjusts it with −/+, or uses its own set time.
+- **Hold at the top** (FV-12): mark exercises with a hold at the top of each rep. They get a 3-second release by default, which each exercise can override.
+- **Save workout edits to the plan** (FV-13): when you change an exercise's targets during a workout, choose whether the change also updates the plan.
 - **Programs** (FV-7): group plans into a split, by rotation or a weekly schedule, so the dashboard knows today's workout.
 - **Offline workout logging with sync** (FV-2): queue sets on the phone without signal and sync them later.
 - **Move the backend to the home server** (FV-3): self-host Auth and Postgres. Only the two frontend settings change.
