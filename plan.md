@@ -239,7 +239,7 @@ Each phase ends with something working and deployed.
 |---|---|
 | Must | Individual sign-in, private records, exercise search and detail, exercise images or demo links, plans, set logging, workout history, weight history, mobile layout, installable PWA |
 | Should | Body measurements, cardio and walking pad, CSV export |
-| Later | Offline logging with sync, family sharing and challenges, nutrition, wearables, self-hosted backend move (needs public HTTPS access, section 5), importing the exercise catalog into Postgres, an email sender on `bobbyjoecool.dev` so invite and reset emails reach the household, cardio items in workout plans. Tracked in [`docs/future-versions.md`](docs/future-versions.md), with a stretching upgrade added 2026-11-09, and the email sender and cardio in plans added 2026-11-10 |
+| Later | Offline logging with sync, family sharing and challenges, nutrition, wearables, self-hosted backend move (needs public HTTPS access, section 5), importing the exercise catalog into Postgres, an email sender on `bobbyjoecool.dev` so invite and reset emails reach the household, cardio items in workout plans, a default rest period that exercises follow, adjust, or override. Tracked in [`docs/future-versions.md`](docs/future-versions.md), with a stretching upgrade added 2026-11-09, and the email sender, cardio in plans, and default rest added 2026-11-10 |
 
 ## 16. Risks
 

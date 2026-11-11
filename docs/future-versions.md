@@ -32,6 +32,7 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 | FV-7 | [Programs: training by day, by rotation or weekly schedule](#fv-7-programs-training-by-day-by-rotation-or-weekly-schedule) | Proposed | Phase 4 (done); best before Phase 5 and 6.5 |
 | FV-9 | [Email sender on bobbyjoecool.dev](#fv-9-email-sender-on-bobbyjoecooldev) | Proposed | None |
 | FV-10 | [Cardio in workout plans](#fv-10-cardio-in-workout-plans) | Proposed | Phases 4, 5 and 7 (done) |
+| FV-11 | [Default rest, with per-exercise overrides](#fv-11-default-rest-with-per-exercise-overrides) | Proposed | Phases 4 and 5 (done) |
 | FV-8 | [Not planned: nutrition, wearables, AI plans, native apps](#fv-8-not-planned) | Not planned | None |
 
 ## Upgrades
@@ -321,6 +322,26 @@ Both modes:
   - `workout_plan_exercises` gains a way to hold a cardio item and its targets (for example `cardio_activity`, `target_minutes`, `target_distance`, `target_incline`, with CHECKs that it's either an exercise or a cardio item).
   - `cardio_sessions` gains a nullable `workout_session_id` (set null if the workout is deleted), so a cardio entry made in a workout is the single record, rather than a set plus a separate cardio row.
   - RLS is unchanged in shape, since both tables are owner-only. The ownership trigger must make sure the linked workout belongs to the same user, and the RLS test gets the cross-parent check. ADR 0001 notes what happens to the cardio entry when its workout is deleted.
+- **Source:** Bob, 2026-11-10.
+
+### FV-11. Default rest, with per-exercise overrides
+
+- **Status:** Proposed (requested 2026-11-10)
+- **Why:** today every plan exercise needs its own Rest (sec), typed one at a time, and an exercise with no rest set gets no rest timer at all. Most people rest about the same everywhere, with a few exceptions: longer after heavy squats, shorter for accessories.
+- **What:**
+  - A **default rest** in Settings (for example 90 s), used by any exercise that doesn't say otherwise, so the rest timer runs everywhere without setup. A plan can optionally set its own default that wins over the Settings one.
+  - It also covers the gap **between exercises**: after the last set of an exercise, moving on with Next starts the same default rest unless the exercise says otherwise.
+  - Each plan exercise's rest becomes one of three choices in Edit targets:
+    - **Default:** use the plan's or the Settings default, and follow it if it changes later.
+    - **Default ± seconds:** −/+ steppers adjust from the default (for example "Default + 30 s"), still following it if it changes.
+    - **Set time:** a fixed number of seconds, as today. Existing plans keep their current rest values as set times, so nothing changes for them.
+  - The plan screen shows the result, e.g. "Rest 2:00 (default + 30 s)".
+- **Depends on:** Phases 4 and 5 (done).
+- **Data and security** (a sketch, to settle when it's scheduled):
+  - `profiles.default_rest_seconds` (nullable, 0–3600) and `workout_plans.default_rest_seconds` (nullable, overrides the profile).
+  - `workout_plan_exercises` gains `rest_mode` (`default` | `offset` | `fixed`) and `rest_offset_seconds`. Existing rows become `fixed` with their current `rest_seconds`; rows with no rest become `default`.
+  - When a workout starts, `start_workout` resolves the rest to plain seconds and copies it into `workout_session_exercises.rest_seconds`, as now, so changing a default later never changes past workouts.
+  - No new tables. RLS is unchanged in shape, since profiles, plans and plan exercises are already owner-only.
 - **Source:** Bob, 2026-11-10.
 
 ### FV-8. Not planned
