@@ -2,9 +2,24 @@
 
 All notable changes to FitIQ. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## Future improvements
 
-Fixes and improvements from the v1 manual test, 2026-11-10. Two migrations: `20261111000000_plan_release_seconds.sql` and `20261111000100_bodyweight_sets.sql`.
+Planned or wanted after v1. Details, dependencies, and status for each are in [`docs/future-versions.md`](docs/future-versions.md).
+
+- **Email sender on `bobbyjoecool.dev`** (FV-9): send invite and password reset emails from the site's own domain, so family members can be invited by email and reset their own passwords.
+- **Cardio in workout plans** (FV-10): add a cardio item, like a walking pad warm-up, to a plan with target minutes, distance, and incline. It's logged during the workout and shows on the Cardio tab.
+- **Default rest** (FV-11): set a default rest period in Settings or per plan, used between sets and between exercises. Each exercise follows the default, adjusts it with −/+, or uses its own set time.
+- **Programs** (FV-7): group plans into a split, by rotation or a weekly schedule, so the dashboard knows today's workout.
+- **Offline workout logging with sync** (FV-2): queue sets on the phone without signal and sync them later.
+- **Move the backend to the home server** (FV-3): self-host Auth and Postgres. Only the two frontend settings change.
+- **Opt-in family sharing and challenges** (FV-4): each person chooses what to share and with whom.
+- **Import the exercise catalog into Postgres** (FV-5): edit or extend catalog exercises, and stop depending on a CDN.
+- **Delete plans that no workout uses** (FV-6): today plans can only be archived.
+- **Kinds of stretch** (FV-1, item 5): tag stretches as static, dynamic, or foam rolling, for warm-up and cool-down starters.
+
+## [1.1.0] — 2026-11-10
+
+Fixes and improvements from the v1 manual test ([#72](https://github.com/BobbyJoeCool/FitIQ/pull/72)). Two migrations, applied to the hosted database before the deploy: `20261111000000_plan_release_seconds.sql` and `20261111000100_bodyweight_sets.sql`.
 
 ### Added
 
@@ -21,21 +36,6 @@ Fixes and improvements from the v1 manual test, 2026-11-10. Two migrations: `202
 
 - The workout page no longer runs off the right edge on tablet and desktop, and nothing covers Previous, Skip, and Next on phones ([#68](https://github.com/BobbyJoeCool/FitIQ/issues/68)).
 - The hold timer follows the Seconds field instead of the plan's target ([#69](https://github.com/BobbyJoeCool/FitIQ/issues/69)).
-
-## Future improvements
-
-Planned or wanted after v1. Details, dependencies, and status for each are in [`docs/future-versions.md`](docs/future-versions.md).
-
-- **Email sender on `bobbyjoecool.dev`** (FV-9): send invite and password reset emails from the site's own domain, so family members can be invited by email and reset their own passwords.
-- **Cardio in workout plans** (FV-10): add a cardio item, like a walking pad warm-up, to a plan with target minutes, distance, and incline. It's logged during the workout and shows on the Cardio tab.
-- **Default rest** (FV-11): set a default rest period in Settings or per plan, used between sets and between exercises. Each exercise follows the default, adjusts it with −/+, or uses its own set time.
-- **Programs** (FV-7): group plans into a split, by rotation or a weekly schedule, so the dashboard knows today's workout.
-- **Offline workout logging with sync** (FV-2): queue sets on the phone without signal and sync them later.
-- **Move the backend to the home server** (FV-3): self-host Auth and Postgres. Only the two frontend settings change.
-- **Opt-in family sharing and challenges** (FV-4): each person chooses what to share and with whom.
-- **Import the exercise catalog into Postgres** (FV-5): edit or extend catalog exercises, and stop depending on a CDN.
-- **Delete plans that no workout uses** (FV-6): today plans can only be archived.
-- **Kinds of stretch** (FV-1, item 5): tag stretches as static, dynamic, or foam rolling, for warm-up and cool-down starters.
 
 ## [1.0.0] — 2026-11-10
 
@@ -91,7 +91,7 @@ The first release: a private workout and progress tracker for a household of 2 t
 - CI runs lint, format check, typecheck, unit and component tests (192), a build, and Playwright end-to-end tests against a local Supabase stack.
 - Deploys to GitHub Pages on every push to `main`. A keep-alive workflow stops the free Supabase project from pausing.
 - Backup and restore scripts for the hosted database, tested with a real restore.
-- A public demo account with about eight weeks of made-up data, reseeded weekly.
+- A public demo account with about eight weeks of made-up data, plus a weekly reseed workflow that runs once its variable and secret are set.
 - [`docs/architecture.md`](docs/architecture.md) and a README with screenshots and a demo GIF.
 
 ### Fixed
@@ -99,4 +99,5 @@ The first release: a private workout and progress tracker for a household of 2 t
 - **Back** after editing a custom exercise returns to the library ([#53](https://github.com/BobbyJoeCool/FitIQ/issues/53)).
 - "Last time" and exercise history order by the workout's date, not by when the row was saved, so back-dated or imported workouts show correctly.
 
+[1.1.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.1.0
 [1.0.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.0.0
