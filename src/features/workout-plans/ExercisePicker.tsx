@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SidebarAction } from '../../app/SidebarSlot'
 import { ReturnLink } from '../../components/common/ReturnLink'
 import { StatusMessage } from '../../components/common/StatusMessage'
 import { FilterSelect } from '../../components/exercise/FilterSelect'
@@ -172,11 +173,11 @@ export function ExercisePicker({
         </div>
       )}
 
-      <div className={styles.stickyDone}>
+      <SidebarAction inlineClassName={styles.stickyDone}>
         <ReturnLink fallback={donePath} replace className={controls.primary}>
           {totalAdded > 0 ? `Done (${totalAdded} added)` : 'Done'}
         </ReturnLink>
-      </div>
+      </SidebarAction>
       <p className="visually-hidden" aria-live="polite">
         {announcement}
       </p>

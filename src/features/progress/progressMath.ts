@@ -109,8 +109,9 @@ export function exerciseRecords(
   for (const p of ordered) {
     for (const s of p.sets) {
       const date = p.startedAt
+      // Bodyweight sets record added weight only, so they'd understate the load: leave them out.
       const weight =
-        s.weightValue !== null && s.weightUnit
+        s.weightValue !== null && s.weightUnit && !s.isBodyweight
           ? convertWeight(s.weightValue, s.weightUnit, unit)
           : null
       if (weight !== null && weight > 0 && s.reps && s.reps > 0) {
@@ -150,7 +151,9 @@ export function topWeightPerWorkout(
   return performances
     .map((p) => {
       const weights = p.sets
-        .filter((s) => s.weightValue !== null && s.weightUnit && (s.reps ?? 0) > 0)
+        .filter(
+          (s) => s.weightValue !== null && s.weightUnit && !s.isBodyweight && (s.reps ?? 0) > 0,
+        )
         .map((s) => convertWeight(s.weightValue!, s.weightUnit!, unit))
       return weights.length ? { date: p.startedAt, value: Math.max(...weights) } : null
     })

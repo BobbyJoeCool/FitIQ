@@ -18,7 +18,6 @@ import controls from '../../styles/controls.module.css'
 import { useAuth } from '../auth/AuthContext'
 import { useProfile } from '../profile/ProfileContext'
 import { exerciseKey } from '../workout-plans/planScreen'
-import { formatDuration } from '../workout-plans/format'
 import { ExerciseLogger } from './ExerciseLogger'
 import { formatElapsed, secondsBetween, sessionTotals } from './workoutMath'
 import styles from './workout.module.css'
@@ -135,6 +134,7 @@ export function ActiveWorkout({
           weightUnit={weightUnit}
           distanceUnit={distanceUnitFor(lengthUnit)}
           offline={!online}
+          rest={rest.running ? { remaining: rest.remaining, onSkip: rest.stop } : null}
           onChange={updateItem}
           onSkip={async (skipped) => {
             await setSessionExerciseSkipped(userId, current.id, skipped)
@@ -153,17 +153,6 @@ export function ActiveWorkout({
         <StatusMessage title="No exercises yet">
           Add exercises from the library as you go.
         </StatusMessage>
-      )}
-
-      {rest.running && (
-        <div className={styles.restBar} role="timer" aria-label="Rest timer">
-          <span>
-            Rest <span className={styles.restTime}>{formatDuration(rest.remaining)}</span>
-          </span>
-          <button type="button" className={controls.primary} onClick={rest.stop}>
-            Skip rest
-          </button>
-        </div>
       )}
 
       <div className={styles.actions} style={{ marginTop: 'var(--space-4)' }}>

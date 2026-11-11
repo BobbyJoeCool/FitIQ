@@ -200,7 +200,7 @@
 
 @media (min-width: 640px) {
   .editorRow {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
   }
 }
 
@@ -292,12 +292,6 @@
   display: flex;
   justify-content: center;
   margin-top: var(--space-4);
-}
-
-@media (min-width: 900px) {
-  .stickyDone {
-    bottom: var(--space-4);
-  }
 }
 
 /* Add to plan (exercise detail) */

@@ -31,6 +31,7 @@ describe('CSV export', () => {
               reps: 5,
               weightValue: 60,
               weightUnit: 'kg',
+              isBodyweight: false,
               durationSeconds: null,
               distanceValue: null,
               distanceUnit: null,
@@ -54,7 +55,7 @@ describe('CSV export', () => {
     const [header, first, second] = lines(workoutsCsv([session]))
     expect(header.split(',')).toContain('weight_unit')
     expect(first).toContain(
-      ',Leg Day,2026-11-09T15:00:00.000Z,2026-11-09T16:00:00.000Z,1,Barbell Squat,done,1,5,60,kg,,,,,"Good, strong"',
+      ',Leg Day,2026-11-09T15:00:00.000Z,2026-11-09T16:00:00.000Z,1,Barbell Squat,done,1,5,no,60,kg,,,,,"Good, strong"',
     )
     expect(second).toContain(',2,Lunge,skipped,')
   })

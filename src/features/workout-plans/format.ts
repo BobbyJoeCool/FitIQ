@@ -22,7 +22,16 @@ export function formatTargets(targets: PlanTargets): string | null {
   const { targetSets: sets, targetReps: reps, restSeconds: rest, targetSeconds: hold } = targets
   const side = targets.perSide ? ' each side' : ''
   const parts: string[] = []
-  if (hold) {
+  const release = targets.targetReleaseSeconds
+  if (hold && release) {
+    // Repeated holds: "3 × 5 × 10 s hold · Release 5 s"
+    const count = [sets, reps]
+      .filter(Boolean)
+      .map((n) => `${n} × `)
+      .join('')
+    parts.push(`${count}${formatDuration(hold)} hold${side}`)
+    parts.push(`Release ${formatDuration(release)}`)
+  } else if (hold) {
     const time = `${formatDuration(hold)}${side}`
     parts.push(sets ? `${sets} × ${time}` : `Hold ${time}`)
     if (reps) parts.push(`Reps ${reps}`)

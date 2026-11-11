@@ -29,6 +29,7 @@ const item = (id: string, overrides: Partial<PlanExercise> = {}): PlanExercise =
   targetReps: null,
   restSeconds: null,
   targetSeconds: null,
+  targetReleaseSeconds: null,
   perSide: false,
   notes: null,
   ...overrides,
@@ -200,6 +201,7 @@ describe('plan builder', () => {
       targetReps: '30 s',
       restSeconds: 45,
       targetSeconds: null,
+      targetReleaseSeconds: null,
       perSide: false,
       notes: null,
     })
@@ -308,6 +310,23 @@ describe('add exercises to a plan', () => {
     await user.click(screen.getByRole('link', { name: 'Done (1 added)' }))
     await vi.waitFor(() => expect(router.state.location.pathname).toBe(`/plans/${PLAN_ID}`))
     expect(router.state.historyAction).toBe('POP')
+  })
+
+  it('puts Done in the side navigation on wider screens', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string) =>
+        ({
+          matches: query === '(min-width: 640px)',
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList,
+    )
+    renderRoute(`/plans/${PLAN_ID}/add`)
+    const sideNav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(await within(sideNav).findByRole('link', { name: 'Done' })).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'Done' })).toHaveLength(1)
+    vi.unstubAllGlobals()
   })
 
   it('adds a custom exercise by its ID', async () => {

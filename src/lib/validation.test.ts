@@ -118,6 +118,7 @@ describe('validateTargets', () => {
         targetReps: ' 8-12 ',
         restSeconds: '90',
         targetSeconds: ' 30 ',
+        releaseSeconds: ' 5 ',
         perSide: true,
         notes: '',
       }),
@@ -128,6 +129,7 @@ describe('validateTargets', () => {
         targetReps: '8-12',
         restSeconds: 90,
         targetSeconds: 30,
+        targetReleaseSeconds: 5,
         perSide: true,
         notes: null,
       },
@@ -141,6 +143,7 @@ describe('validateTargets', () => {
       targetReps: 'x'.repeat(21),
       restSeconds: '1.5',
       targetSeconds: '601',
+      releaseSeconds: '0',
       perSide: false,
       notes: 'x'.repeat(501),
     })
@@ -148,6 +151,7 @@ describe('validateTargets', () => {
     if (!result.ok) {
       expect(Object.keys(result.errors).sort()).toEqual([
         'notes',
+        'releaseSeconds',
         'restSeconds',
         'targetReps',
         'targetSeconds',
@@ -157,5 +161,13 @@ describe('validateTargets', () => {
     expect(validateTargets({ ...targetsToForm(NO_TARGETS), targetSets: '21' }).ok).toBe(false)
     expect(validateTargets({ ...targetsToForm(NO_TARGETS), restSeconds: '3601' }).ok).toBe(false)
     expect(validateTargets({ ...targetsToForm(NO_TARGETS), restSeconds: '0' }).ok).toBe(true)
+  })
+
+  it('needs a hold time for a release time', () => {
+    const result = validateTargets({ ...targetsToForm(NO_TARGETS), releaseSeconds: '5' })
+    expect(result).toEqual({
+      ok: false,
+      errors: { releaseSeconds: 'Set a hold time too: release is the break between holds.' },
+    })
   })
 })

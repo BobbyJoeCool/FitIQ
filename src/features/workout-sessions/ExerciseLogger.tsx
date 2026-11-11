@@ -18,7 +18,13 @@ import { useAuth } from '../auth/AuthContext'
 import { exercisePath } from '../exercises/paths'
 import { formatTargets } from '../workout-plans/format'
 import { SetForm } from './SetForm'
-import { formatDateTime, formatSet, nextSetDefaults, setModeFor } from './workoutMath'
+import {
+  formatDateTime,
+  formatSet,
+  isBodyweightExercise,
+  nextSetDefaults,
+  setModeFor,
+} from './workoutMath'
 import styles from './workout.module.css'
 
 /** The current exercise in a workout: last time, sets done, and the next set. */
@@ -30,6 +36,7 @@ export function ExerciseLogger({
   weightUnit,
   distanceUnit,
   offline,
+  rest,
   onChange,
   onSkip,
   onPrevious,
@@ -43,6 +50,7 @@ export function ExerciseLogger({
   weightUnit: WeightUnit
   distanceUnit: DistanceUnit
   offline: boolean
+  rest: { remaining: number; onSkip: () => void } | null
   onChange: (item: SessionExercise) => void
   onSkip: (skipped: boolean) => Promise<void>
   onPrevious: (() => void) | null
@@ -139,8 +147,9 @@ export function ExerciseLogger({
                   initial={set}
                   weightUnit={set.weightUnit ?? weightUnit}
                   distanceUnit={set.distanceUnit ?? distanceUnit}
-                  holdSeconds={null}
+                  showTimer={false}
                   perSide={item.targets.perSide}
+                  releaseSeconds={item.targets.targetReleaseSeconds}
                   submitLabel="Save set"
                   disabledReason={offlineReason}
                   onSubmit={(input) => editSet(set, input)}
@@ -169,13 +178,21 @@ export function ExerciseLogger({
           key={`${item.id}:${nextNumber}`}
           mode={mode}
           title={title}
-          initial={nextSetDefaults(sets.at(-1), lastTime?.sets, item.targets, weightUnit)}
+          initial={nextSetDefaults(
+            sets.at(-1),
+            lastTime?.sets,
+            item.targets,
+            weightUnit,
+            isBodyweightExercise(exercise),
+          )}
           weightUnit={weightUnit}
           distanceUnit={distanceUnit}
-          holdSeconds={item.targets.targetSeconds}
+          showTimer
           perSide={item.targets.perSide}
+          releaseSeconds={item.targets.targetReleaseSeconds}
           submitLabel="Complete set"
           disabledReason={offlineReason}
+          rest={rest}
           onSubmit={addSet}
         />
       )}

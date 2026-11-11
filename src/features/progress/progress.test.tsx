@@ -221,6 +221,7 @@ describe('overview and exercises (6.4)', () => {
             reps: 5,
             weightValue: 135,
             weightUnit: 'lb',
+            isBodyweight: false,
             durationSeconds: null,
             distanceValue: null,
             distanceUnit: null,

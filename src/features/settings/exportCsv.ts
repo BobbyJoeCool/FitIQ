@@ -28,7 +28,20 @@ export function workoutsCsv(sessions: WorkoutSession[]): string {
       ]
       if (e.sets.length === 0) {
         return [
-          [...base, e.isSkipped ? 'skipped' : 'not done', '', '', '', '', '', '', '', '', s.notes],
+          [
+            ...base,
+            e.isSkipped ? 'skipped' : 'not done',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            s.notes,
+          ],
         ]
       }
       return e.sets.map((set) => [
@@ -36,6 +49,7 @@ export function workoutsCsv(sessions: WorkoutSession[]): string {
         'done',
         set.setNumber,
         set.reps,
+        set.isBodyweight ? 'yes' : 'no',
         set.weightValue,
         set.weightUnit,
         set.durationSeconds,
@@ -57,6 +71,7 @@ export function workoutsCsv(sessions: WorkoutSession[]): string {
       'status',
       'set_number',
       'reps',
+      'bodyweight',
       'weight',
       'weight_unit',
       'duration_seconds',

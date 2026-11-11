@@ -21,6 +21,7 @@ const set = (o: Partial<SessionSet>): SessionSet => ({
   reps: null,
   weightValue: null,
   weightUnit: null,
+  isBodyweight: false,
   durationSeconds: null,
   distanceValue: null,
   distanceUnit: null,
@@ -104,6 +105,22 @@ describe('exerciseRecords', () => {
     expect(records.mostReps).toEqual({ reps: 12, date: at(2026, 11, 1) })
     expect(records.bestSetVolume?.volume).toBeCloseTo(1620, 5) // 12 × 135
     expect(records.longestHold).toBeUndefined()
+  })
+
+  it('counts bodyweight sets for reps but not for weight', () => {
+    const records = exerciseRecords(
+      [
+        perf(at(2026, 11, 1), [
+          set({ reps: 15, isBodyweight: true }),
+          set({ reps: 6, isBodyweight: true, weightValue: 45, weightUnit: 'lb' }),
+        ]),
+      ],
+      'lb',
+      'mi',
+    )
+    expect(records.mostReps).toEqual({ reps: 15, date: at(2026, 11, 1) })
+    expect(records.heaviest).toBeUndefined()
+    expect(records.bestSetVolume).toBeUndefined()
   })
 
   it('records holds and distances, and nothing from empty sets', () => {

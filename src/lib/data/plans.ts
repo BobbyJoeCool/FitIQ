@@ -25,6 +25,8 @@ export interface PlanTargets {
   restSeconds: number | null
   /** Hold or work time per set, for stretches and timed exercises. */
   targetSeconds: number | null
+  /** Release time between repeated holds within a set (hold, release, repeat). Needs targetSeconds. */
+  targetReleaseSeconds: number | null
   /** The target applies to each side. */
   perSide: boolean
   notes: string | null
@@ -51,6 +53,7 @@ export const NO_TARGETS: PlanTargets = {
   targetReps: null,
   restSeconds: null,
   targetSeconds: null,
+  targetReleaseSeconds: null,
   perSide: false,
   notes: null,
 }
@@ -74,13 +77,14 @@ interface PlanExerciseRow {
   target_reps: string | null
   rest_seconds: number | null
   target_seconds: number | null
+  target_release_seconds: number | null
   per_side: boolean
   notes: string | null
 }
 
 const PLAN_COLUMNS = 'id, name, description, is_archived, updated_at'
 const PLAN_EXERCISE_COLUMNS =
-  'id, plan_id, catalog_exercise_id, custom_exercise_id, sort_order, target_sets, target_reps, rest_seconds, target_seconds, per_side, notes'
+  'id, plan_id, catalog_exercise_id, custom_exercise_id, sort_order, target_sets, target_reps, rest_seconds, target_seconds, target_release_seconds, per_side, notes'
 
 function planFromRow(row: PlanRow, exerciseCount = 0): Plan {
   return {
@@ -105,6 +109,7 @@ function planExerciseFromRow(row: PlanExerciseRow): PlanExercise {
     targetReps: row.target_reps,
     restSeconds: row.rest_seconds,
     targetSeconds: row.target_seconds,
+    targetReleaseSeconds: row.target_release_seconds,
     perSide: row.per_side,
     notes: row.notes,
   }
@@ -116,6 +121,7 @@ function targetsToRow(targets: PlanTargets) {
     target_reps: targets.targetReps,
     rest_seconds: targets.restSeconds,
     target_seconds: targets.targetSeconds,
+    target_release_seconds: targets.targetSeconds ? targets.targetReleaseSeconds : null,
     per_side: targets.perSide,
     notes: targets.notes,
   }

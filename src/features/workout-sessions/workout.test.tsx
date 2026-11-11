@@ -18,6 +18,7 @@ const set = (overrides: Partial<SessionSet>): SessionSet => ({
   reps: null,
   weightValue: null,
   weightUnit: null,
+  isBodyweight: false,
   durationSeconds: null,
   distanceValue: null,
   distanceUnit: null,
@@ -177,6 +178,7 @@ describe('logging sets', () => {
       reps: 8,
       weightValue: 140,
       weightUnit: 'lb',
+      isBodyweight: false,
       durationSeconds: null,
       distanceValue: null,
       distanceUnit: 'mi',
@@ -189,8 +191,65 @@ describe('logging sets', () => {
     expect(
       within(screen.getByRole('form', { name: 'Set 2 of 3' })).getByLabelText('Weight (lb)'),
     ).toHaveValue('140')
-    // The plan's 90 s rest starts.
-    expect(screen.getByRole('timer', { name: 'Rest timer' })).toHaveTextContent('Rest 1:30')
+    // The plan's 90 s rest starts, in place of Complete set, until it's skipped.
+    const next = screen.getByRole('form', { name: 'Set 2 of 3' })
+    expect(within(next).getByRole('timer', { name: 'Rest timer' })).toHaveTextContent('Rest 1:30')
+    expect(within(next).queryByRole('button', { name: 'Complete set' })).not.toBeInTheDocument()
+    await user.click(within(next).getByRole('button', { name: 'Skip rest' }))
+    expect(within(next).queryByRole('timer', { name: 'Rest timer' })).not.toBeInTheDocument()
+    expect(within(next).getByRole('button', { name: 'Complete set' })).toBeEnabled()
+  })
+
+  it('logs a bodyweight set, defaulting to Body for body-only exercises', async () => {
+    vi.mocked(data.loadExerciseLibrary).mockResolvedValue([
+      makeExercise({ id: 'Pullups', name: 'Pullups', equipment: 'body only' }),
+    ])
+    vi.mocked(data.getInProgressSession).mockResolvedValue({
+      ...structuredClone(SESSION),
+      exercises: [
+        item('x1', {
+          exercise: { source: 'catalog', id: 'Pullups' },
+          exerciseName: 'Pullups',
+          targets: { ...NO_TARGETS, targetSets: 3, targetReps: '8' },
+        }),
+      ],
+    })
+    vi.mocked(data.saveSet).mockImplementation(async (exerciseId, setNumber, input) =>
+      set({ ...input, sessionExerciseId: exerciseId, setNumber }),
+    )
+    const user = userEvent.setup()
+    renderRoute('/workout')
+    const form = await screen.findByRole('form', { name: 'Set 1 of 3' })
+    expect(within(form).getByRole('checkbox', { name: 'Body weight' })).toBeChecked()
+    await user.type(within(form).getByLabelText('Added weight (lb, optional)'), '25')
+    await user.click(within(form).getByRole('button', { name: 'Complete set' }))
+    expect(data.saveSet).toHaveBeenCalledWith(
+      'x1',
+      1,
+      expect.objectContaining({ reps: 8, isBodyweight: true, weightValue: 25 }),
+    )
+    expect(await screen.findByRole('list', { name: 'Sets done' })).toHaveTextContent(
+      '8 × Body + 25 lb',
+    )
+  })
+
+  it('clears the weight when switching a set to body weight', async () => {
+    vi.mocked(data.getExerciseHistory).mockResolvedValue([
+      {
+        sessionId: 'old',
+        exerciseName: 'Barbell Squat',
+        sessionName: 'Leg Day',
+        startedAt: '2026-11-02T10:00:00Z',
+        sets: [set({ reps: 8, weightValue: 135, weightUnit: 'lb' })],
+      },
+    ])
+    const user = userEvent.setup()
+    renderRoute('/workout')
+    const form = await screen.findByRole('form', { name: 'Set 1 of 3' })
+    expect(within(form).getByRole('checkbox', { name: 'Body weight' })).not.toBeChecked()
+    expect(within(form).getByLabelText('Weight (lb)')).toHaveValue('135')
+    await user.click(within(form).getByRole('checkbox', { name: 'Body weight' }))
+    expect(within(form).getByLabelText('Added weight (lb, optional)')).toHaveValue('')
   })
 
   it('keeps what was typed when a save fails', async () => {
@@ -253,6 +312,73 @@ describe('logging sets', () => {
       vi.advanceTimersByTime(30_500)
     })
     expect(within(form).getByRole('timer')).toHaveAccessibleName('Done')
+  })
+
+  it('follows the Seconds field and the Each side toggle', async () => {
+    const user = userEvent.setup()
+    renderRoute(`/workout?exercise=x2`)
+    const form = await screen.findByRole('form', { name: 'Set 1 of 1' })
+    const seconds = within(form).getByLabelText('Seconds (each side)')
+    await user.clear(seconds)
+    await user.type(seconds, '45')
+    expect(within(form).getByRole('timer')).toHaveAccessibleName('45 s each side')
+
+    await user.click(within(form).getByRole('checkbox', { name: 'Each side (left and right)' }))
+    expect(within(form).getByLabelText('Seconds')).toHaveValue('45')
+    expect(within(form).getByRole('timer')).toHaveAccessibleName('45 s hold')
+
+    await user.clear(within(form).getByLabelText('Seconds'))
+    expect(within(form).getByRole('button', { name: 'Start timer' })).toBeDisabled()
+  })
+
+  it('runs repeated holds with a release, and logs the holds as reps', async () => {
+    vi.mocked(data.getInProgressSession).mockResolvedValue({
+      ...structuredClone(SESSION),
+      exercises: [
+        item('x1', {
+          exercise: { source: 'catalog', id: 'Hamstring_Stretch' },
+          exerciseName: 'Ab Roller',
+          targets: {
+            ...NO_TARGETS,
+            targetSets: 1,
+            targetReps: '2',
+            targetSeconds: 10,
+            targetReleaseSeconds: 5,
+          },
+        }),
+      ],
+    })
+    vi.mocked(data.saveSet).mockImplementation(async (exerciseId, setNumber, input) =>
+      set({ ...input, sessionExerciseId: exerciseId, setNumber }),
+    )
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderRoute('/workout')
+    const form = await screen.findByRole('form', { name: 'Set 1 of 1' })
+    expect(within(form).getByLabelText('Reps (holds)')).toHaveValue('2')
+    expect(within(form).getByRole('timer')).toHaveAccessibleName('2 × 10 s hold, 5 s release')
+
+    await user.click(within(form).getByRole('button', { name: 'Start timer' }))
+    expect(within(form).getByRole('timer')).toHaveAccessibleName('Hold · 1 of 2')
+    await act(async () => {
+      vi.advanceTimersByTime(10_500)
+    })
+    expect(within(form).getByRole('timer')).toHaveAccessibleName('Release')
+    await act(async () => {
+      vi.advanceTimersByTime(5_500)
+    })
+    expect(within(form).getByRole('timer')).toHaveAccessibleName('Hold · 2 of 2')
+    await act(async () => {
+      vi.advanceTimersByTime(10_500)
+    })
+    expect(within(form).getByRole('timer')).toHaveAccessibleName('Done')
+
+    await user.click(within(form).getByRole('button', { name: 'Complete set' }))
+    expect(data.saveSet).toHaveBeenCalledWith(
+      'x1',
+      1,
+      expect.objectContaining({ reps: 2, durationSeconds: 10, weightValue: null }),
+    )
   })
 })
 

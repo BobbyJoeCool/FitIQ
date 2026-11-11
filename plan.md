@@ -123,10 +123,10 @@ PostgreSQL, UUID primary keys, UTC timestamps, foreign keys and indexes on owner
 | `profiles` | id (= auth user ID), display_name, preferred weight unit (default `lb`), preferred length unit (default `in`), timestamps |
 | `custom_exercises` | id, user_id, name, description, primary_muscles, secondary_muscles, equipment, difficulty, movement_type, video_url, video_source_name, is_archived, timestamps |
 | `workout_plans` | id, user_id, name, description, is_archived, timestamps |
-| `workout_plan_exercises` | id, user_id, plan_id, catalog_exercise_id (text, nullable), custom_exercise_id (nullable), sort_order, target_sets, target_reps (text, allows "8-12"), rest_seconds, notes |
+| `workout_plan_exercises` | id, user_id, plan_id, catalog_exercise_id (text, nullable), custom_exercise_id (nullable), sort_order, target_sets, target_reps (text, allows "8-12"), rest_seconds, target_seconds (hold), target_release_seconds (break between repeated holds), per_side, notes |
 | `workout_sessions` | id, user_id, plan_id (nullable), name, started_at, completed_at, notes |
-| `workout_session_exercises` | id, user_id, session_id, catalog_exercise_id (text, nullable), custom_exercise_id (nullable), exercise_name (copied at the time), sort_order, is_skipped, notes |
-| `workout_sets` | id, user_id, session_exercise_id, set_number, reps, weight_value, weight_unit, duration_seconds, distance_value, distance_unit, is_completed, notes |
+| `workout_session_exercises` | id, user_id, session_id, catalog_exercise_id (text, nullable), custom_exercise_id (nullable), exercise_name (copied at the time), sort_order, is_skipped, notes, and the plan's targets copied at the start |
+| `workout_sets` | id, user_id, session_exercise_id, set_number, reps, weight_value, weight_unit, is_bodyweight (weight_value is then added weight), duration_seconds, distance_value, distance_unit, is_completed, notes |
 | `weight_history` | id, user_id, recorded_at, weight_value, weight_unit, notes |
 | `body_measurements` | id, user_id, recorded_at, measurement_type, measurement_value, measurement_unit, notes |
 | `cardio_sessions` | id, user_id, activity_type, started_at, duration_seconds, distance_value, distance_unit, incline, notes |

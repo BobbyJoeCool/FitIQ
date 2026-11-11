@@ -2,22 +2,25 @@
 
 All notable changes to FitIQ. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## In progress
+## [Unreleased]
 
-Found in the v1 manual test, 2026-11-10, and being worked on now.
+Fixes and improvements from the v1 manual test, 2026-11-10. Two migrations: `20261111000000_plan_release_seconds.sql` and `20261111000100_bodyweight_sets.sql`.
 
-### Fixes
+### Added
 
-- The exercise picker's **Done** button floats over the exercise list. On desktop it should move to the sidebar ([#64](https://github.com/BobbyJoeCool/FitIQ/issues/64)).
-- Bodyweight exercises can't be logged as "Body". It should be an option, and the default for bodyweight exercises ([#65](https://github.com/BobbyJoeCool/FitIQ/issues/65)).
-- The workout page doesn't adapt to different screen sizes ([#68](https://github.com/BobbyJoeCool/FitIQ/issues/68)).
-- Changing the hold seconds doesn't update the hold timer ([#69](https://github.com/BobbyJoeCool/FitIQ/issues/69)).
+- **Bodyweight sets.** A Body weight checkbox on strength sets, ticked by default for body-only exercises, with optional added weight: "10 × Body", "8 × Body + 25 lb". They count for Most reps, not for Heaviest, Best set, or volume. The workouts CSV has a `bodyweight` column ([#65](https://github.com/BobbyJoeCool/FitIQ/issues/65)).
+- **Repeated holds.** A Release (sec) target for exercises like the ab roller. The timer runs hold, release, hold for the target reps, then the other side if per side, and logs the holds as reps ([#67](https://github.com/BobbyJoeCool/FitIQ/issues/67)).
+- **Each side toggle** on timed sets during a workout. It changes that set only, not the plan ([#70](https://github.com/BobbyJoeCool/FitIQ/issues/70)).
 
-### Improvements
+### Changed
 
-- The rest timer replaces the **Complete set** button and turns red while you rest ([#66](https://github.com/BobbyJoeCool/FitIQ/issues/66)).
-- An interval timer for repeated holds, such as the ab roller: hold, release, repeat ([#67](https://github.com/BobbyJoeCool/FitIQ/issues/67)).
-- Turn "each side" on or off for a hold from the workout screen ([#70](https://github.com/BobbyJoeCool/FitIQ/issues/70)).
+- The rest countdown replaces **Complete set**, in red, with **Skip rest**, instead of floating over the screen ([#66](https://github.com/BobbyJoeCool/FitIQ/issues/66)).
+- The exercise picker's **Done** button sits in the side navigation on tablet and desktop ([#64](https://github.com/BobbyJoeCool/FitIQ/issues/64)).
+
+### Fixed
+
+- The workout page no longer runs off the right edge on tablet and desktop, and nothing covers Previous, Skip, and Next on phones ([#68](https://github.com/BobbyJoeCool/FitIQ/issues/68)).
+- The hold timer follows the Seconds field instead of the plan's target ([#69](https://github.com/BobbyJoeCool/FitIQ/issues/69)).
 
 ## Future improvements
 

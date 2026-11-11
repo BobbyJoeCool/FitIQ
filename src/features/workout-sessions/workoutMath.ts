@@ -11,11 +11,26 @@ export function setModeFor(exercise: Exercise | undefined, targets: PlanTargets)
   return 'strength'
 }
 
-/** "8 × 135 lb", "10 reps", "30 s", "1.2 mi · 12:00". Uses the set's own units. */
+/** Exercises done with body weight by default: the catalog's "body only" equipment. */
+export function isBodyweightExercise(exercise: Exercise | undefined): boolean {
+  return exercise?.equipment === 'body only'
+}
+
+/**
+ * "8 × 135 lb", "10 × Body", "8 × Body + 25 lb", "10 reps", "30 s", "1.2 mi · 12:00".
+ * Uses the set's own units.
+ */
 export function formatSet(set: Pick<SessionSet, keyof SetInput>): string {
   const parts: string[] = []
-  const weight =
-    set.weightValue !== null && set.weightUnit
+  const added =
+    set.weightValue !== null && set.weightValue > 0 && set.weightUnit
+      ? `${round(set.weightValue, 2)} ${set.weightUnit}`
+      : null
+  const weight = set.isBodyweight
+    ? added
+      ? `Body + ${added}`
+      : 'Body'
+    : set.weightValue !== null && set.weightUnit
       ? `${round(set.weightValue, 2)} ${set.weightUnit}`
       : null
   if (set.reps !== null && weight) parts.push(`${set.reps} × ${weight}`)
@@ -55,7 +70,7 @@ export interface SessionTotals {
   exercisesWithSets: number
   skipped: number
   notLogged: number
-  /** Sum of reps × weight, converted to `unit`. Only sets with both count. */
+  /** Sum of reps × weight, converted to `unit`. Only sets with both count; bodyweight sets don't. */
   volume: number
   unit: WeightUnit
 }
@@ -72,7 +87,7 @@ export function sessionTotals(session: WorkoutSession, unit: WeightUnit): Sessio
     else notLogged += 1
     for (const set of exercise.sets) {
       setCount += 1
-      if (set.reps && set.weightValue !== null && set.weightUnit) {
+      if (set.reps && set.weightValue !== null && set.weightUnit && !set.isBodyweight) {
         volume += set.reps * convertWeight(set.weightValue, set.weightUnit, unit)
       }
     }
@@ -88,13 +103,15 @@ export function repsFromTarget(target: string | null): number | null {
 
 /**
  * Starting values for the next set: the previous set this workout, else the
- * first set last time, else the plan's targets. Weight is in `unit`.
+ * first set last time, else the plan's targets. Weight is in `unit`. Body weight
+ * follows the source set, else `bodyweight` (the exercise's default).
  */
 export function nextSetDefaults(
   previous: SessionSet | undefined,
   lastTime: SessionSet[] | undefined,
   targets: PlanTargets,
   unit: WeightUnit,
+  bodyweight = false,
 ): SetInput {
   const source = previous ?? lastTime?.[0]
   const weight =
@@ -105,6 +122,7 @@ export function nextSetDefaults(
     reps: source?.reps ?? repsFromTarget(targets.targetReps),
     weightValue: weight,
     weightUnit: unit,
+    isBodyweight: source ? source.isBodyweight : bodyweight,
     durationSeconds: source?.durationSeconds ?? targets.targetSeconds,
     distanceValue: source?.distanceValue ?? null,
     distanceUnit: source?.distanceUnit ?? null,
