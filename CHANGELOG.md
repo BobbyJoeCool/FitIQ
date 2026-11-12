@@ -8,7 +8,6 @@ Planned or wanted after v1. Details, dependencies, and status for each are in [`
 
 - **Email sender on `bobbyjoecool.dev`** (FV-9): send invite and password reset emails from the site's own domain, so family members can be invited by email and reset their own passwords.
 - **Cardio in workout plans** (FV-10): add a cardio item, like a walking pad warm-up, to a plan with target minutes, distance, and incline. It's logged during the workout and shows on the Cardio tab.
-- **Default rest** (FV-11): set a default rest period in Settings or per plan, used between sets and between exercises. Each exercise follows the default, adjusts it with −/+, or uses its own set time.
 - **Hold at the top** (FV-12): mark exercises with a hold at the top of each rep. They get a 3-second release by default, which each exercise can override.
 - **Save workout edits to the plan** (FV-13): when you change an exercise's targets during a workout, choose whether the change also updates the plan.
 - **Programs** (FV-7): group plans into a split, by rotation or a weekly schedule, so the dashboard knows today's workout.
@@ -17,6 +16,24 @@ Planned or wanted after v1. Details, dependencies, and status for each are in [`
 - **Opt-in family sharing and challenges** (FV-4): each person chooses what to share and with whom.
 - **Import the exercise catalog into Postgres** (FV-5): edit or extend catalog exercises, and stop depending on a CDN.
 - **Kinds of stretch** (FV-1, item 5): tag stretches as static, dynamic, or foam rolling, for warm-up and cool-down starters.
+
+## [1.5.0] — 2026-11-12
+
+Default rest, with per-exercise overrides (FV-11, [#77](https://github.com/BobbyJoeCool/FitIQ/issues/77)). One migration, `20261112000100_default_rest.sql`.
+
+### Added
+
+- **Default rest in Settings**: one number of seconds that plan exercises rest by unless they say otherwise. It starts blank (off), so nothing changes until you set it.
+- **A plan's own default rest** in Edit details, which wins over Settings. The plan screen shows which default it's using.
+- **Three rest choices per exercise** in Edit targets: **Default** follows the default and any later change to it; **Default ±** adjusts it with −/+ steppers in 15-second steps, e.g. "Default + 30 s"; **Set time** is a fixed number of seconds, as before. The editor shows what the choice works out to.
+- The plan screen shows each exercise's rest and where it comes from: "Rest 2:00 (default + 30 s)", "Rest 1:30 (default)", "Rest 45 s".
+- Exercises added during a workout rest by the Settings default.
+- Plan files are now version 2, with `defaultRestSeconds` on the plan and `restOffsetSeconds` on exercises. Version 1 files still import.
+
+### Changed
+
+- Existing plans behave exactly as before: an exercise with a rest keeps it as a set time, and one without follows the default (off until you set one).
+- A workout works out each exercise's rest when it starts, so changing a default later never changes past or in-progress workouts.
 
 ## [1.4.0] — 2026-11-12
 
@@ -140,6 +157,7 @@ The first release: a private workout and progress tracker for a household of 2 t
 - **Back** after editing a custom exercise returns to the library ([#53](https://github.com/BobbyJoeCool/FitIQ/issues/53)).
 - "Last time" and exercise history order by the workout's date, not by when the row was saved, so back-dated or imported workouts show correctly.
 
+[1.5.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.5.0
 [1.4.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.4.0
 [1.3.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.3.0
 [1.2.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.2.0

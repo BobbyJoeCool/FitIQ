@@ -10,6 +10,8 @@ import { createPlan, getMyPlan, updatePlan, type Plan } from '../../lib/data'
 import { LIMITS, validatePlan, type PlanErrors, type PlanForm } from '../../lib/validation'
 import controls from '../../styles/controls.module.css'
 import { useAuth } from '../auth/AuthContext'
+import { useProfile } from '../profile/ProfileContext'
+import { formatRest } from './format'
 import styles from './plans.module.css'
 
 /** New plan (/plans/new) and edit a plan's name and description (/plans/:id/edit). */
@@ -48,7 +50,10 @@ function PlanEditor({ userId, existing }: { userId: string; existing: Plan | nul
   const [form, setForm] = useState<PlanForm>({
     name: existing?.name ?? '',
     description: existing?.description ?? '',
+    defaultRest: existing?.defaultRestSeconds?.toString() ?? '',
   })
+  const { profile } = useProfile()
+  const settingsRest = profile?.defaultRestSeconds ?? null
   const [errors, setErrors] = useState<PlanErrors>({})
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -104,6 +109,22 @@ function PlanEditor({ userId, existing }: { userId: string; existing: Plan | nul
             value={form.description}
             maxLength={LIMITS.planDescriptionMax}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+        </Field>
+
+        <Field
+          label="Default rest for this plan, in seconds (optional)"
+          hint={`Exercises that follow the default use this. Leave blank to use your Settings default (${
+            settingsRest === null ? 'off' : formatRest(settingsRest)
+          }).`}
+          error={errors.defaultRest}
+        >
+          <input
+            className={controls.input}
+            inputMode="numeric"
+            placeholder="90"
+            value={form.defaultRest}
+            onChange={(e) => setForm({ ...form, defaultRest: e.target.value })}
           />
         </Field>
 

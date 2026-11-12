@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { Field } from '../../components/forms/Field'
-import type { Exercise, PlanExercise, PlanTargets } from '../../lib/data'
+import type { Exercise, PlanExercise, PlanExerciseTargets, RestMode } from '../../lib/data'
+import { resolveRest } from '../../lib/rest'
 import {
   LIMITS,
   targetsToForm,
@@ -11,7 +12,7 @@ import {
 } from '../../lib/validation'
 import controls from '../../styles/controls.module.css'
 import { exercisePath } from '../exercises/paths'
-import { formatTargets } from './format'
+import { formatOffset, formatPlanTargets, formatRest } from './format'
 import { fallbackName } from './planScreen'
 import styles from './plans.module.css'
 
@@ -23,6 +24,7 @@ export function PlanExerciseItem({
   count,
   busy,
   linkState,
+  defaultRest,
   onMove,
   onSaveTargets,
   onRemove,
@@ -34,15 +36,17 @@ export function PlanExerciseItem({
   count: number
   busy: boolean
   linkState: unknown
+  /** The plan's default rest, else the Settings one; null when neither is set (FV-11). */
+  defaultRest: number | null
   onMove: (direction: -1 | 1) => void
-  onSaveTargets: (targets: PlanTargets) => Promise<void>
+  onSaveTargets: (targets: PlanExerciseTargets) => Promise<void>
   onRemove: () => Promise<void>
 }) {
   const [mode, setMode] = useState<'view' | 'edit' | 'confirm-remove'>('view')
   const [error, setError] = useState<string | null>(null)
   const [removing, setRemoving] = useState(false)
   const name = exercise?.name ?? fallbackName(item.exercise)
-  const summary = formatTargets(item)
+  const summary = formatPlanTargets(item, defaultRest)
 
   async function remove() {
     setRemoving(true)
@@ -123,6 +127,7 @@ export function PlanExerciseItem({
         <TargetsEditor
           name={name}
           initial={targetsToForm(item)}
+          defaultRest={defaultRest}
           onCancel={() => setMode('view')}
           onSave={async (targets) => {
             await onSaveTargets(targets)
@@ -157,23 +162,53 @@ export function PlanExerciseItem({
   )
 }
 
+const REST_CHOICES: { mode: RestMode; label: string }[] = [
+  { mode: 'default', label: 'Default' },
+  { mode: 'offset', label: 'Default ±' },
+  { mode: 'fixed', label: 'Set time' },
+]
+
+/** What the chosen rest works out to, under the choices. */
+function restPreview(form: TargetsForm, defaultRest: number | null): string {
+  const none =
+    'No default rest is set, so this exercise has no rest timer. Set one in Settings or on the plan.'
+  if (form.restMode === 'fixed') return 'Rests this long whatever the default is.'
+  if (defaultRest === null) return none
+  const offset = Number(form.restOffset.trim().replace('−', '-'))
+  const seconds = resolveRest(
+    { restMode: form.restMode, restSeconds: null, restOffsetSeconds: offset || 0 },
+    defaultRest,
+  )
+  const result = seconds ? `rests ${formatRest(seconds)}` : 'has no rest'
+  return `The default is ${formatRest(defaultRest)}, so this ${result}. It follows the default if that changes.`
+}
+
 function TargetsEditor({
   name,
   initial,
+  defaultRest,
   onSave,
   onCancel,
 }: {
   name: string
   initial: TargetsForm
-  onSave: (targets: PlanTargets) => Promise<void>
+  defaultRest: number | null
+  onSave: (targets: PlanExerciseTargets) => Promise<void>
   onCancel: () => void
 }) {
+  const offsetId = useId()
+  const restHintId = useId()
   const [form, setForm] = useState(initial)
   const [errors, setErrors] = useState<TargetsErrors>({})
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const set = (key: Exclude<keyof TargetsForm, 'perSide'>, value: string) =>
+  const set = (key: Exclude<keyof TargetsForm, 'perSide' | 'restMode'>, value: string) =>
     setForm({ ...form, [key]: value })
+  const bumpOffset = (direction: 1 | -1) => {
+    const current = Number(form.restOffset.trim().replace('−', '-')) || 0
+    const next = Math.max(-3600, Math.min(3600, current + direction * 15))
+    set('restOffset', next > 0 ? `+${next}` : String(next))
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -219,15 +254,6 @@ function TargetsEditor({
             onChange={(e) => set('targetReps', e.target.value)}
           />
         </Field>
-        <Field label="Rest (sec)" error={errors.restSeconds}>
-          <input
-            className={controls.input}
-            inputMode="numeric"
-            placeholder="90"
-            value={form.restSeconds}
-            onChange={(e) => set('restSeconds', e.target.value)}
-          />
-        </Field>
         <Field
           label="Hold (sec)"
           hint="For timed exercises like stretches"
@@ -255,6 +281,79 @@ function TargetsEditor({
           />
         </Field>
       </div>
+      <fieldset className={styles.rest} aria-describedby={restHintId}>
+        <legend>Rest between sets</legend>
+        <div className={styles.choices}>
+          {REST_CHOICES.map((choice) => (
+            <label key={choice.mode} className={styles.choice}>
+              <input
+                type="radio"
+                name={`rest-mode-${name}`}
+                checked={form.restMode === choice.mode}
+                onChange={() => setForm({ ...form, restMode: choice.mode })}
+              />
+              {choice.label}
+              {choice.mode === 'default' && (
+                <span className={styles.muted}>
+                  {defaultRest === null ? ' (off)' : ` (${formatRest(defaultRest)})`}
+                </span>
+              )}
+            </label>
+          ))}
+        </div>
+        {form.restMode === 'offset' && (
+          <div className={controls.field}>
+            <label htmlFor={offsetId}>Seconds from the default</label>
+            <div className={styles.stepper}>
+              <button
+                type="button"
+                className={controls.button}
+                aria-label="15 seconds less rest"
+                onClick={() => bumpOffset(-1)}
+              >
+                −
+              </button>
+              <input
+                id={offsetId}
+                className={controls.input}
+                inputMode="numeric"
+                value={form.restOffset}
+                aria-invalid={Boolean(errors.restOffset)}
+                onChange={(e) => set('restOffset', e.target.value)}
+              />
+              <button
+                type="button"
+                className={controls.button}
+                aria-label="15 seconds more rest"
+                onClick={() => bumpOffset(1)}
+              >
+                +
+              </button>
+            </div>
+            {errors.restOffset && <span className={controls.error}>{errors.restOffset}</span>}
+            {!errors.restOffset && (
+              <span className={controls.hint}>
+                {formatOffset(Number(form.restOffset.trim().replace('−', '-')) || 0)} from the
+                default
+              </span>
+            )}
+          </div>
+        )}
+        {form.restMode === 'fixed' && (
+          <Field label="Rest (sec)" error={errors.restSeconds}>
+            <input
+              className={controls.input}
+              inputMode="numeric"
+              placeholder="90"
+              value={form.restSeconds}
+              onChange={(e) => set('restSeconds', e.target.value)}
+            />
+          </Field>
+        )}
+        <p id={restHintId} className={styles.muted} style={{ margin: 0 }}>
+          {restPreview(form, defaultRest)}
+        </p>
+      </fieldset>
       <label className={styles.checkbox}>
         <input
           type="checkbox"

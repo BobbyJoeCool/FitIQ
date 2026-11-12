@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as data from '../../lib/data'
 import type { SessionExercise, SessionSet, WorkoutSession } from '../../lib/data'
-import { NO_TARGETS } from '../../lib/data/plans'
+import { NO_PLAN_TARGETS, NO_TARGETS } from '../../lib/data/plans'
 import { LIBRARY, makeExercise } from '../../test/exerciseFixtures'
 import * as cues from '../../lib/sound/cues'
 import { renderRoute } from '../../test/renderRoute'
@@ -98,6 +98,7 @@ describe('starting a workout', () => {
         isArchived: false,
         exerciseCount: 2,
         updatedAt: '',
+        defaultRestSeconds: null,
       },
     ])
     vi.mocked(data.getMyPlan).mockResolvedValue({
@@ -107,13 +108,14 @@ describe('starting a workout', () => {
       isArchived: false,
       exerciseCount: 1,
       updatedAt: '',
+      defaultRestSeconds: null,
       exercises: [
         {
           id: 'pe1',
           planId: 'plan-1',
           exercise: { source: 'catalog', id: 'Barbell_Squat' },
           sortOrder: 0,
-          ...NO_TARGETS,
+          ...NO_PLAN_TARGETS,
         },
       ],
     })
@@ -536,6 +538,7 @@ describe('adding mid-workout', () => {
       SESSION_ID,
       { source: 'catalog', id: 'Dumbbell_Bench_Press' },
       'Dumbbell Bench Press',
+      null, // no Settings default rest
     )
   })
 })

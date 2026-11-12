@@ -1,4 +1,4 @@
-import type { CustomExerciseInput, PlanInput, PlanTargets } from './data'
+import type { CustomExerciseInput, PlanExerciseTargets, PlanInput, RestMode } from './data'
 import { DIFFICULTIES, EQUIPMENT, MOVEMENT_TYPES, MUSCLES } from './exerciseVocabulary'
 
 /**
@@ -30,6 +30,7 @@ export const LIMITS = {
   targetSetsMax: 20,
   targetRepsMax: 20,
   restSecondsMax: 3600,
+  restOffsetMax: 3600,
   targetSecondsMax: 600,
   planNotesMax: 500,
 } as const
@@ -105,6 +106,8 @@ export function validateCustomExercise(
 export interface PlanForm {
   name: string
   description: string
+  /** This plan's default rest in seconds, as typed; blank uses Settings (FV-11). */
+  defaultRest: string
 }
 
 export type PlanErrors = Partial<Record<keyof PlanForm, string>>
@@ -121,28 +124,51 @@ export function validatePlan(
   if (description && description.length > LIMITS.planDescriptionMax) {
     errors.description = `Keep the description under ${LIMITS.planDescriptionMax + 1} characters.`
   }
+  const defaultRestSeconds = validateRestSeconds(form.defaultRest)
+  if (defaultRestSeconds === undefined) errors.defaultRest = REST_ERROR
   if (Object.keys(errors).length) return { ok: false, errors }
-  return { ok: true, value: { name, description } }
+  return { ok: true, value: { name, description, defaultRestSeconds: defaultRestSeconds ?? null } }
+}
+
+const REST_ERROR = `Use whole seconds from 0 to ${LIMITS.restSecondsMax}, or leave it blank.`
+
+/**
+ * A default rest as typed (Settings or a plan, FV-11): blank is null (none),
+ * whole seconds 0 to 3600 are a number, anything else is undefined (invalid).
+ */
+export function validateRestSeconds(text: string): number | null | undefined {
+  const t = text.trim()
+  if (!t) return null
+  if (!/^\d+$/.test(t)) return undefined
+  const n = Number(t)
+  return n <= LIMITS.restSecondsMax ? n : undefined
 }
 
 /** The targets form holds text, as typed, so half-typed numbers can be reported. */
 export interface TargetsForm {
   targetSets: string
   targetReps: string
+  /** Follow the default, adjust it, or a set time (FV-11). */
+  restMode: RestMode
+  /** The set time, used when restMode is fixed. */
   restSeconds: string
+  /** Seconds added to the default (negative to take away), when restMode is offset. */
+  restOffset: string
   targetSeconds: string
   releaseSeconds: string
   perSide: boolean
   notes: string
 }
 
-export type TargetsErrors = Partial<Record<Exclude<keyof TargetsForm, 'perSide'>, string>>
+export type TargetsErrors = Partial<
+  Record<Exclude<keyof TargetsForm, 'perSide' | 'restMode'>, string>
+>
 
 const wholeNumber = (value: string) => (/^\d+$/.test(value) ? Number(value) : NaN)
 
 export function validateTargets(
   form: TargetsForm,
-): { ok: true; value: PlanTargets } | { ok: false; errors: TargetsErrors } {
+): { ok: true; value: PlanExerciseTargets } | { ok: false; errors: TargetsErrors } {
   const errors: TargetsErrors = {}
   const setsText = form.targetSets.trim()
   const restText = form.restSeconds.trim()
@@ -158,9 +184,20 @@ export function validateTargets(
   if (targetReps && targetReps.length > LIMITS.targetRepsMax) {
     errors.targetReps = `Keep this under ${LIMITS.targetRepsMax + 1} characters, e.g. 8-12.`
   }
-  const restSeconds = restText ? wholeNumber(restText) : null
-  if (restSeconds !== null && !(restSeconds >= 0 && restSeconds <= LIMITS.restSecondsMax)) {
-    errors.restSeconds = `Use whole seconds from 0 to ${LIMITS.restSecondsMax}.`
+  let restSeconds: number | null = null
+  let restOffsetSeconds: number | null = null
+  if (form.restMode === 'fixed') {
+    restSeconds = restText ? wholeNumber(restText) : NaN
+    if (!(restSeconds >= 0 && restSeconds <= LIMITS.restSecondsMax)) {
+      errors.restSeconds = `Use whole seconds from 0 to ${LIMITS.restSecondsMax}.`
+    }
+  } else if (form.restMode === 'offset') {
+    // Accepts "+30", "30", "-15", and the typographic minus the steppers show.
+    const offsetText = form.restOffset.trim().replace('−', '-')
+    restOffsetSeconds = /^[+-]?\d+$/.test(offsetText) ? Number(offsetText) : NaN
+    if (!(Math.abs(restOffsetSeconds) <= LIMITS.restOffsetMax)) {
+      errors.restOffset = `Use whole seconds from −${LIMITS.restOffsetMax} to +${LIMITS.restOffsetMax}.`
+    }
   }
   const targetSeconds = holdText ? wholeNumber(holdText) : null
   if (targetSeconds !== null && !(targetSeconds >= 1 && targetSeconds <= LIMITS.targetSecondsMax)) {
@@ -184,7 +221,9 @@ export function validateTargets(
     value: {
       targetSets,
       targetReps,
+      restMode: form.restMode,
       restSeconds,
+      restOffsetSeconds,
       targetSeconds,
       targetReleaseSeconds,
       perSide: form.perSide,
@@ -193,11 +232,14 @@ export function validateTargets(
   }
 }
 
-export function targetsToForm(targets: PlanTargets): TargetsForm {
+export function targetsToForm(targets: PlanExerciseTargets): TargetsForm {
+  const offset = targets.restOffsetSeconds ?? 0
   return {
     targetSets: targets.targetSets?.toString() ?? '',
     targetReps: targets.targetReps ?? '',
+    restMode: targets.restMode,
     restSeconds: targets.restSeconds?.toString() ?? '',
+    restOffset: offset > 0 ? `+${offset}` : String(offset),
     targetSeconds: targets.targetSeconds?.toString() ?? '',
     releaseSeconds: targets.targetReleaseSeconds?.toString() ?? '',
     perSide: targets.perSide,

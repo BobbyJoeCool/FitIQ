@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { NO_TARGETS } from '../../lib/data/plans'
-import { exerciseCount, formatRest, formatTargets } from './format'
+import { NO_PLAN_TARGETS, NO_TARGETS } from '../../lib/data/plans'
+import { describeRest, exerciseCount, formatPlanTargets, formatRest, formatTargets } from './format'
 
 describe('formatRest', () => {
   it('uses seconds under a minute and m:ss above', () => {
@@ -54,5 +54,32 @@ describe('hold targets', () => {
         restSeconds: 60,
       }),
     ).toBe('3 × 5 × 10 s hold · Release 5 s · Rest 1:00')
+  })
+})
+
+describe('describeRest and formatPlanTargets (FV-11)', () => {
+  const base = { ...NO_PLAN_TARGETS, targetSets: 3, targetReps: '8-12' }
+  it('says where the rest comes from', () => {
+    expect(describeRest({ ...base }, 90)).toBe('Rest 1:30 (default)')
+    expect(describeRest({ ...base, restMode: 'offset', restOffsetSeconds: 30 }, 90)).toBe(
+      'Rest 2:00 (default + 30 s)',
+    )
+    expect(describeRest({ ...base, restMode: 'offset', restOffsetSeconds: -15 }, 90)).toBe(
+      'Rest 1:15 (default − 15 s)',
+    )
+    expect(describeRest({ ...base, restMode: 'fixed', restSeconds: 45 }, 90)).toBe('Rest 45 s')
+    expect(describeRest({ ...base, restMode: 'fixed', restSeconds: 0 }, 90)).toBe('No rest')
+  })
+
+  it('says nothing for a default that is off, but flags an offset with no default', () => {
+    expect(describeRest({ ...base }, null)).toBeNull()
+    expect(describeRest({ ...base, restMode: 'offset', restOffsetSeconds: 30 }, null)).toBe(
+      'Rest: default + 30 s (no default set)',
+    )
+  })
+
+  it('joins the targets and the rest', () => {
+    expect(formatPlanTargets(base, 120)).toBe('3 × 8-12 · Rest 2:00 (default)')
+    expect(formatPlanTargets(NO_PLAN_TARGETS, null)).toBeNull()
   })
 })

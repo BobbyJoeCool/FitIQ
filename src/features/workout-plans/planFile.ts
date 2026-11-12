@@ -2,8 +2,8 @@ import type {
   CustomExerciseInput,
   Exercise,
   ExerciseRef,
+  PlanExerciseTargets,
   PlanInput,
-  PlanTargets,
   PlanWithExercises,
 } from '../../lib/data'
 import { validateCustomExercise, validatePlan, validateTargets } from '../../lib/validation'
@@ -17,7 +17,11 @@ import { validateCustomExercise, validatePlan, validateTargets } from '../../lib
  */
 
 export const PLAN_FILE_FORMAT = 'fitiq-plan'
-export const PLAN_FILE_VERSION = 1
+/**
+ * 2 (1.5.0) adds the default rest: `defaultRestSeconds` on the plan and
+ * `restOffsetSeconds` on exercises. Version 1 files still import.
+ */
+export const PLAN_FILE_VERSION = 2
 export const PLAN_FILE_MAX_BYTES = 200_000
 export const PLAN_FILE_MAX_EXERCISES = 100
 
@@ -45,7 +49,10 @@ export interface PlanFileExercise {
   seconds?: number | null
   releaseSeconds?: number | null
   perSide?: boolean
+  /** A set rest time. Without this or restOffsetSeconds, the exercise follows the default rest. */
   restSeconds?: number | null
+  /** Seconds added to the default rest (negative to take away). Version 2. */
+  restOffsetSeconds?: number | null
   notes?: string | null
 }
 
@@ -54,6 +61,8 @@ export interface PlanFile {
   version: number
   name: string
   description?: string | null
+  /** This plan's default rest, in seconds. Version 2. */
+  defaultRestSeconds?: number | null
   exercises: PlanFileExercise[]
 }
 
@@ -67,6 +76,7 @@ export function buildPlanFile(plan: PlanWithExercises, library: Exercise[] | nul
     version: PLAN_FILE_VERSION,
     name: plan.name,
     description: plan.description,
+    defaultRestSeconds: plan.defaultRestSeconds,
     exercises: plan.exercises.map((item) => {
       const exercise = byKey.get(exerciseKey(item.exercise))
       const targets = {
@@ -75,7 +85,8 @@ export function buildPlanFile(plan: PlanWithExercises, library: Exercise[] | nul
         seconds: item.targetSeconds,
         releaseSeconds: item.targetReleaseSeconds,
         perSide: item.perSide,
-        restSeconds: item.restSeconds,
+        restSeconds: item.restMode === 'fixed' ? item.restSeconds : null,
+        restOffsetSeconds: item.restMode === 'offset' ? item.restOffsetSeconds : null,
         notes: item.notes,
       }
       if (item.exercise.source === 'catalog') {
@@ -118,15 +129,15 @@ export function planFileName(name: string): string {
 
 /** One exercise as it will be imported. */
 export type ImportItem =
-  | { kind: 'catalog'; name: string; ref: ExerciseRef; targets: PlanTargets }
-  | { kind: 'custom-existing'; name: string; ref: ExerciseRef; targets: PlanTargets }
+  | { kind: 'catalog'; name: string; ref: ExerciseRef; targets: PlanExerciseTargets }
+  | { kind: 'custom-existing'; name: string; ref: ExerciseRef; targets: PlanExerciseTargets }
   /** `customKey` groups repeats of the same new exercise, so it's created once. */
   | {
       kind: 'custom-new'
       name: string
       custom: CustomExerciseInput
       customKey: string
-      targets: PlanTargets
+      targets: PlanExerciseTargets
     }
   /** A catalog ID the library doesn't have: skipped. */
   | { kind: 'unknown'; name: string; catalogId: string }
@@ -201,6 +212,7 @@ export function parsePlanFile(text: string, library: Exercise[]): ParseResult {
     const plan = validatePlan({
       name: optionalString(data.name, 'The plan name'),
       description: optionalString(data.description, 'The plan description'),
+      defaultRest: asText(data.defaultRestSeconds, 'The plan default rest'),
     })
     if (!plan.ok) return { ok: false, error: firstError(plan.errors) }
 
@@ -222,10 +234,17 @@ export function parsePlanFile(text: string, library: Exercise[]): ParseResult {
     const items = data.exercises.map((raw, i): ImportItem => {
       const where = `Exercise ${i + 1}`
       if (!isObject(raw)) throw new Error(`${where} isn't an object.`)
+      const restSeconds = asText(raw.restSeconds, `${where}: restSeconds`)
+      const restOffset = asText(raw.restOffsetSeconds, `${where}: restOffsetSeconds`)
+      if (restSeconds && restOffset) {
+        throw new Error(`${where} has both "restSeconds" and "restOffsetSeconds": use one.`)
+      }
       const targets = validateTargets({
         targetSets: asText(raw.sets, `${where}: sets`),
         targetReps: asText(raw.reps, `${where}: reps`),
-        restSeconds: asText(raw.restSeconds, `${where}: restSeconds`),
+        restMode: restSeconds ? 'fixed' : restOffset ? 'offset' : 'default',
+        restSeconds,
+        restOffset,
         targetSeconds: asText(raw.seconds, `${where}: seconds`),
         releaseSeconds: asText(raw.releaseSeconds, `${where}: releaseSeconds`),
         perSide: raw.perSide === true,

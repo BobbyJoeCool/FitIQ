@@ -67,6 +67,8 @@ const must = (result, what) => {
 const t = (sets, reps, rest, extra = {}) => ({
   target_sets: sets,
   target_reps: reps,
+  // A set time (FV-11): rest_mode must say so when rest_seconds is set.
+  rest_mode: rest === null ? 'default' : 'fixed',
   rest_seconds: rest,
   target_seconds: null,
   per_side: false,

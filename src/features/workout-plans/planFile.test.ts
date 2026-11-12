@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { PlanWithExercises } from '../../lib/data'
-import { NO_TARGETS } from '../../lib/data/plans'
-import { LIBRARY } from '../../test/exerciseFixtures'
+import { NO_PLAN_TARGETS } from '../../lib/data/plans'
+import formatDoc from '../../../docs/plan-format.md?raw'
+import { LIBRARY, makeExercise } from '../../test/exerciseFixtures'
 import { buildPlanFile, parsePlanFile, planFileName, planFileText } from './planFile'
 
 const PLAN: PlanWithExercises = {
@@ -11,28 +12,32 @@ const PLAN: PlanWithExercises = {
   isArchived: false,
   exerciseCount: 3,
   updatedAt: '2026-11-12T00:00:00Z',
+  defaultRestSeconds: 75,
   exercises: [
     {
-      ...NO_TARGETS,
+      ...NO_PLAN_TARGETS,
       id: 'e1',
       planId: 'plan-1',
       sortOrder: 0,
       exercise: { source: 'catalog', id: 'Barbell_Squat' },
       targetSets: 3,
       targetReps: '8-12',
+      restMode: 'fixed',
       restSeconds: 90,
     },
     {
-      ...NO_TARGETS,
+      ...NO_PLAN_TARGETS,
       id: 'e2',
       planId: 'plan-1',
       sortOrder: 1,
       exercise: { source: 'catalog', id: 'Hamstring_Stretch' },
       targetSeconds: 30,
       perSide: true,
+      restMode: 'offset',
+      restOffsetSeconds: -15,
     },
     {
-      ...NO_TARGETS,
+      ...NO_PLAN_TARGETS,
       id: 'e3',
       planId: 'plan-1',
       sortOrder: 2,
@@ -49,7 +54,12 @@ const file = (overrides: Record<string, unknown> = {}) =>
 describe('buildPlanFile (FV-15)', () => {
   it('writes the routine only: no IDs, dates or history', () => {
     const built = buildPlanFile(PLAN, LIBRARY)
-    expect(built).toMatchObject({ format: 'fitiq-plan', version: 1, name: 'Push Day' })
+    expect(built).toMatchObject({
+      format: 'fitiq-plan',
+      version: 2,
+      name: 'Push Day',
+      defaultRestSeconds: 75,
+    })
     expect(built.exercises[0]).toEqual({
       catalogId: 'Barbell_Squat',
       name: 'Barbell Squat',
@@ -59,8 +69,11 @@ describe('buildPlanFile (FV-15)', () => {
       releaseSeconds: null,
       perSide: false,
       restSeconds: 90,
+      restOffsetSeconds: null,
       notes: null,
     })
+    expect(built.exercises[1]).toMatchObject({ restSeconds: null, restOffsetSeconds: -15 })
+    expect(built.exercises[2]).toMatchObject({ restSeconds: null, restOffsetSeconds: null })
     expect(built.exercises[2].custom).toMatchObject({
       name: 'Walking Pad Incline Walk',
       primaryMuscles: ['calves'],
@@ -82,15 +95,29 @@ describe('parsePlanFile (FV-15)', () => {
   it('round-trips an exported plan, matching your custom exercise by name', () => {
     const result = parsePlanFile(planFileText(PLAN, LIBRARY), LIBRARY)
     if (!result.ok) throw new Error(result.error)
-    expect(result.preview.plan).toEqual({ name: 'Push Day', description: 'Chest and shoulders' })
+    expect(result.preview.plan).toEqual({
+      name: 'Push Day',
+      description: 'Chest and shoulders',
+      defaultRestSeconds: 75,
+    })
     expect(result.preview.items.map((i) => i.kind)).toEqual([
       'catalog',
       'catalog',
       'custom-existing',
     ])
     expect(result.preview.items[1]).toMatchObject({
-      targets: { ...NO_TARGETS, targetSeconds: 30, perSide: true },
+      targets: {
+        ...NO_PLAN_TARGETS,
+        targetSeconds: 30,
+        perSide: true,
+        restMode: 'offset',
+        restOffsetSeconds: -15,
+      },
     })
+    expect(result.preview.items[0]).toMatchObject({
+      targets: { restMode: 'fixed', restSeconds: 90 },
+    })
+    expect(result.preview.items[2]).toMatchObject({ targets: { restMode: 'default' } })
     expect(result.preview.items[2]).toMatchObject({
       ref: { source: 'custom', id: LIBRARY[3].id },
     })
@@ -105,7 +132,7 @@ describe('parsePlanFile (FV-15)', () => {
       LIBRARY,
     )
     if (!result.ok) throw new Error(result.error)
-    expect(result.preview.items[0]).toMatchObject({ kind: 'catalog', targets: NO_TARGETS })
+    expect(result.preview.items[0]).toMatchObject({ kind: 'catalog', targets: NO_PLAN_TARGETS })
     expect(result.preview.items[1]).toMatchObject({ targets: { targetReps: '10' } })
   })
 
@@ -135,7 +162,12 @@ describe('parsePlanFile (FV-15)', () => {
   it.each([
     ['not json', 'not JSON', "isn't valid JSON"],
     ['wrong format', JSON.stringify({ format: 'other' }), "isn't a FitIQ plan"],
-    ['newer version', file({ version: 2 }), 'newer version of FitIQ'],
+    ['newer version', file({ version: 3 }), 'newer version of FitIQ'],
+    [
+      'both rest kinds',
+      file({ exercises: [{ catalogId: 'Barbell_Squat', restSeconds: 60, restOffsetSeconds: 15 }] }),
+      'use one',
+    ],
     ['no name', file({ name: ' ', exercises: [{ catalogId: 'Barbell_Squat' }] }), 'name'],
     ['no exercises', file(), 'no exercises'],
     [
@@ -175,8 +207,42 @@ describe('parsePlanFile (FV-15)', () => {
     if (!result.ok) expect(result.error).toContain(message)
   })
 
+  it('still imports version 1 files: a rest is a set time, none follows the default', () => {
+    const result = parsePlanFile(
+      file({
+        version: 1,
+        exercises: [
+          { catalogId: 'Barbell_Squat', restSeconds: 120 },
+          { catalogId: 'Plank_X' },
+          { catalogId: 'Hamstring_Stretch' },
+        ],
+      }),
+      LIBRARY,
+    )
+    if (!result.ok) throw new Error(result.error)
+    expect(result.preview.plan.defaultRestSeconds).toBeNull()
+    expect(result.preview.items[0]).toMatchObject({
+      targets: { restMode: 'fixed', restSeconds: 120 },
+    })
+    expect(result.preview.items[2]).toMatchObject({ targets: { restMode: 'default' } })
+  })
+
   it('rejects files over 200 KB', () => {
     const result = parsePlanFile(file({ description: 'x'.repeat(210_000) }), LIBRARY)
     expect(result).toEqual({ ok: false, error: 'That file is too big for a plan (over 200 KB).' })
+  })
+})
+
+describe('docs/plan-format.md (FV-15)', () => {
+  it('has examples that import cleanly', () => {
+    const examples = [...formatDoc.matchAll(/```json\n([\s\S]*?)```/g)].map((m) => m[1])
+    expect(examples.length).toBeGreaterThanOrEqual(2)
+    const ids = ['Barbell_Squat', 'Romanian_Deadlift', 'Plank', 'Hamstring_Stretch', 'Pushups']
+    const library = ids.map((id) => makeExercise({ id, name: id.replace(/_/g, ' ') }))
+    for (const text of examples) {
+      const result = parsePlanFile(text, library)
+      if (!result.ok) throw new Error(result.error)
+      expect(result.preview.items.every((i) => i.kind !== 'unknown')).toBe(true)
+    }
   })
 })

@@ -1,4 +1,4 @@
-import type { PlanTargets } from '../../lib/data'
+import type { PlanExerciseTargets } from '../../lib/data'
 
 /**
  * Ready-made routines a user can copy into their own plans (step 4.4,
@@ -9,7 +9,7 @@ import type { PlanTargets } from '../../lib/data'
  */
 export interface StarterExercise {
   id: string
-  targets: PlanTargets
+  targets: PlanExerciseTargets
 }
 
 export interface StarterPlan {
@@ -25,7 +25,10 @@ const hold = (id: string, perSide: boolean): StarterExercise => ({
   targets: {
     targetSets: 1,
     targetReps: null,
+    // A set time of no rest: a stretch flows straight into the next.
+    restMode: 'fixed',
     restSeconds: 0,
+    restOffsetSeconds: null,
     targetSeconds: 30,
     targetReleaseSeconds: null,
     perSide,

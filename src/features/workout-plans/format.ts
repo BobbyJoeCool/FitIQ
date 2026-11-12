@@ -1,4 +1,5 @@
-import type { PlanTargets } from '../../lib/data'
+import type { PlanExerciseTargets, PlanTargets } from '../../lib/data'
+import { resolveRest } from '../../lib/rest'
 
 /** A hold or work time: 30 -> "30 s", 90 -> "1:30". */
 export function formatDuration(seconds: number): string {
@@ -40,6 +41,44 @@ export function formatTargets(targets: PlanTargets): string | null {
   else if (reps) parts.push(`Reps ${reps}${side}`)
   if (rest !== null) parts.push(`Rest ${formatRest(rest)}`)
   return parts.length ? parts.join(' · ') : null
+}
+
+/** "+30 s", "−15 s", "1:30" for offsets of a minute or more. */
+export function formatOffset(seconds: number): string {
+  const sign = seconds < 0 ? '−' : '+'
+  return `${sign}${formatDuration(Math.abs(seconds))}`
+}
+
+/**
+ * A plan exercise's rest (FV-11): "Rest 2:00 (default + 30 s)", "Rest 1:30
+ * (default)", "Rest 45 s". Null when it follows a default that's off.
+ */
+export function describeRest(
+  targets: PlanExerciseTargets,
+  defaultRest: number | null,
+): string | null {
+  const seconds = resolveRest(targets, defaultRest)
+  const value = (s: number) => (s === 0 ? 'No rest' : `Rest ${formatRest(s)}`)
+  if (targets.restMode === 'fixed') return seconds === null ? null : value(seconds)
+  if (targets.restMode === 'offset') {
+    const offset = formatOffset(targets.restOffsetSeconds ?? 0).replace(/^([+−])/, '$1 ')
+    if (seconds === null) return `Rest: default ${offset} (no default set)`
+    return `${value(seconds)} (default ${offset})`
+  }
+  return seconds === null ? null : `${value(seconds)} (default)`
+}
+
+/** formatTargets for a plan exercise, with its rest worked out from the defaults. */
+export function formatPlanTargets(
+  targets: PlanExerciseTargets,
+  defaultRest: number | null,
+): string | null {
+  const parts = [
+    formatTargets({ ...targets, restSeconds: null }),
+    describeRest(targets, defaultRest),
+  ]
+  const text = parts.filter(Boolean).join(' · ')
+  return text || null
 }
 
 /** "1 exercise", "3 exercises". */

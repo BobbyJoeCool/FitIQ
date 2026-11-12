@@ -10,21 +10,27 @@ export interface Profile {
   displayName: string | null
   weightUnit: WeightUnit
   lengthUnit: LengthUnit
+  /** Default rest between sets, in seconds, for exercises that follow it (FV-11). Null: off. */
+  defaultRestSeconds?: number | null
   /** Set while an account deletion request is pending (step 8.3). */
   deletionRequestedAt?: string | null
 }
 
-export type ProfileUpdate = Partial<Pick<Profile, 'displayName' | 'weightUnit' | 'lengthUnit'>>
+export type ProfileUpdate = Partial<
+  Pick<Profile, 'displayName' | 'weightUnit' | 'lengthUnit' | 'defaultRestSeconds'>
+>
 
 interface ProfileRow {
   id: string
   display_name: string | null
   weight_unit: WeightUnit
   length_unit: LengthUnit
+  default_rest_seconds: number | null
   deletion_requested_at: string | null
 }
 
-const COLUMNS = 'id, display_name, weight_unit, length_unit, deletion_requested_at'
+const COLUMNS =
+  'id, display_name, weight_unit, length_unit, default_rest_seconds, deletion_requested_at'
 
 function fromRow(row: ProfileRow): Profile {
   return {
@@ -32,6 +38,7 @@ function fromRow(row: ProfileRow): Profile {
     displayName: row.display_name,
     weightUnit: row.weight_unit,
     lengthUnit: row.length_unit,
+    defaultRestSeconds: row.default_rest_seconds,
     deletionRequestedAt: row.deletion_requested_at,
   }
 }
@@ -52,6 +59,7 @@ export async function updateMyProfile(userId: string, update: ProfileUpdate): Pr
   if (update.displayName !== undefined) row.display_name = update.displayName
   if (update.weightUnit !== undefined) row.weight_unit = update.weightUnit
   if (update.lengthUnit !== undefined) row.length_unit = update.lengthUnit
+  if (update.defaultRestSeconds !== undefined) row.default_rest_seconds = update.defaultRestSeconds
 
   const { data, error } = await getSupabase()
     .from('profiles')
