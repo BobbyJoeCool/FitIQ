@@ -58,6 +58,7 @@ beforeEach(() => {
   vi.mocked(data.onAuthChange).mockReturnValue(() => {})
   vi.mocked(data.loadExerciseLibrary).mockResolvedValue(LIBRARY)
   vi.mocked(data.getMyPlan).mockResolvedValue(structuredClone(BUILDER))
+  vi.mocked(data.isPlanUsed).mockResolvedValue(false)
   vi.mocked(data.listMyPlans).mockResolvedValue([])
 })
 
@@ -485,5 +486,50 @@ describe('sharing a plan as a file (FV-15)', () => {
     expect(file.exercises).toHaveLength(3)
     expect(file.exercises[0]).toMatchObject({ catalogId: 'Barbell_Squat', sets: 3, reps: '8-12' })
     expect(file.exercises[1].custom).toMatchObject({ name: 'Walking Pad Incline Walk' })
+  })
+})
+
+describe('deleting an unused plan (FV-6)', () => {
+  it('deletes a plan no workout has used, after confirming', async () => {
+    vi.mocked(data.deletePlan).mockResolvedValue()
+    const user = userEvent.setup()
+    renderRoute(`/plans/${PLAN_ID}`)
+    await user.click(await screen.findByRole('button', { name: 'Delete' }))
+    const confirm = screen.getByRole('group', { name: 'Delete this plan?' })
+    await user.click(within(confirm).getByRole('button', { name: 'Keep it' }))
+    expect(data.deletePlan).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    await user.click(screen.getByRole('button', { name: 'Delete plan' }))
+    expect(data.deletePlan).toHaveBeenCalledWith('user-a', PLAN_ID)
+    expect(await screen.findByRole('heading', { name: 'Plans' })).toBeInTheDocument()
+  })
+
+  it('offers only archive for a plan a workout used', async () => {
+    vi.mocked(data.isPlanUsed).mockResolvedValue(true)
+    renderRoute(`/plans/${PLAN_ID}`)
+    expect(await screen.findByText(/can be archived but not deleted/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Archive' })).toBeInTheDocument()
+  })
+
+  it('hides Delete when it cannot tell whether a workout used the plan', async () => {
+    vi.mocked(data.isPlanUsed).mockRejectedValue(new Error('offline'))
+    renderRoute(`/plans/${PLAN_ID}`)
+    expect(await screen.findByRole('button', { name: 'Archive' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+  })
+
+  it('explains when the database refuses because a workout started meanwhile', async () => {
+    vi.mocked(data.deletePlan).mockRejectedValue(
+      new Error(
+        "This plan has been used in a workout, so it can't be deleted. Archive it instead.",
+      ),
+    )
+    const user = userEvent.setup()
+    renderRoute(`/plans/${PLAN_ID}`)
+    await user.click(await screen.findByRole('button', { name: 'Delete' }))
+    await user.click(screen.getByRole('button', { name: 'Delete plan' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Archive it instead.')
   })
 })

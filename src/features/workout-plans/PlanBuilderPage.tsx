@@ -6,6 +6,7 @@ import { StatusMessage } from '../../components/common/StatusMessage'
 import { useAsync } from '../../hooks/useAsync'
 import { returnState } from '../../hooks/useReturnTo'
 import {
+  deletePlan,
   removePlanExercise,
   reorderPlanExercises,
   setPlanArchived,
@@ -55,6 +56,7 @@ export function PlanBuilderPage() {
           userId={userId}
           plan={state.data.plan}
           library={state.data.library}
+          used={state.data.used}
           onChange={(plan) => setState({ status: 'ready', data: { ...state.data, plan } })}
         />
       )}
@@ -66,11 +68,14 @@ function PlanBuilder({
   userId,
   plan,
   library,
+  used,
   onChange,
 }: {
   userId: string
   plan: PlanWithExercises
   library: Parameters<typeof indexLibrary>[0]
+  /** Whether a workout used this plan; only unused plans can be deleted (FV-6). */
+  used: boolean | null
   onChange: (plan: PlanWithExercises) => void
 }) {
   const location = useLocation()
@@ -81,6 +86,20 @@ function PlanBuilder({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [announcement, setAnnouncement] = useState('')
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  async function remove() {
+    setBusy(true)
+    setError(null)
+    try {
+      await deletePlan(userId, plan.id)
+      navigate('/plans', { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete the plan.')
+      setConfirmingDelete(false)
+      setBusy(false)
+    }
+  }
 
   useEffect(() => {
     document.title = `${plan.name} · FitIQ`
@@ -171,7 +190,46 @@ function PlanBuilder({
             Share as file
           </button>
         )}
+        {used === false && !confirmingDelete && (
+          <button
+            type="button"
+            className={`${controls.button} ${styles.danger}`}
+            disabled={busy}
+            onClick={() => setConfirmingDelete(true)}
+          >
+            Delete
+          </button>
+        )}
       </div>
+      {confirmingDelete && (
+        <div className={styles.confirm} role="group" aria-label="Delete this plan?">
+          <p>
+            Delete this plan and its exercises? No workout has used it, so nothing else changes.
+            This can't be undone.
+          </p>
+          <button
+            type="button"
+            className={`${controls.button} ${styles.danger}`}
+            disabled={busy}
+            onClick={remove}
+          >
+            {busy ? 'Deleting…' : 'Delete plan'}
+          </button>
+          <button
+            type="button"
+            className={controls.button}
+            onClick={() => setConfirmingDelete(false)}
+          >
+            Keep it
+          </button>
+        </div>
+      )}
+      {used === true && (
+        <p className={styles.muted}>
+          You've done a workout from this plan, so it can be archived but not deleted. That keeps
+          your history linked to it.
+        </p>
+      )}
       {starter.error && (
         <p className={styles.error} role="alert">
           {starter.error} <Link to="/workout">Go to your workout</Link>
