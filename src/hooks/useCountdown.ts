@@ -18,6 +18,9 @@ export function useCountdown(onDone?: () => void) {
       const t = Date.now()
       setNow(t)
       if (t >= endsAt) {
+        // Stop here rather than waiting for the re-render, so a late or
+        // batched tick can't call onDone twice (it speaks cues, FV-14).
+        window.clearInterval(id)
         setEndsAt(null)
         doneRef.current?.()
       }

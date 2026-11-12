@@ -5,9 +5,11 @@ import * as data from '../../lib/data'
 import type { SessionExercise, SessionSet, WorkoutSession } from '../../lib/data'
 import { NO_TARGETS } from '../../lib/data/plans'
 import { LIBRARY, makeExercise } from '../../test/exerciseFixtures'
+import * as cues from '../../lib/sound/cues'
 import { renderRoute } from '../../test/renderRoute'
 
 vi.mock('../../lib/data')
+vi.mock('../../lib/sound/cues')
 
 const SESSION_ID = 'bbbbbbbb-0000-4000-8000-000000000001'
 
@@ -291,6 +293,8 @@ describe('logging sets', () => {
   })
 
   it('runs a hold timer for a timed stretch, switching sides', async () => {
+    vi.mocked(cues.speak).mockClear()
+    vi.mocked(cues.playTone).mockClear()
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderRoute(`/workout?exercise=x2`)
@@ -301,7 +305,18 @@ describe('logging sets', () => {
     await user.click(within(form).getByRole('button', { name: 'Start timer' }))
     expect(within(form).getByRole('timer')).toHaveAccessibleName('First side')
     await act(async () => {
-      vi.advanceTimersByTime(30_500)
+      vi.advanceTimersByTime(26_900)
+    })
+    expect(cues.playTone).not.toHaveBeenCalled()
+    // 3, 2, 1: one soft tone a second, the last one higher (FV-14).
+    for (let i = 0; i < 3; i += 1) {
+      await act(async () => {
+        vi.advanceTimersByTime(1_000)
+      })
+    }
+    expect(vi.mocked(cues.playTone).mock.calls).toEqual([[false], [false], [true]])
+    await act(async () => {
+      vi.advanceTimersByTime(600)
     })
     expect(within(form).getByRole('timer')).toHaveAccessibleName('Switch sides')
     await act(async () => {
@@ -312,6 +327,14 @@ describe('logging sets', () => {
       vi.advanceTimersByTime(30_500)
     })
     expect(within(form).getByRole('timer')).toHaveAccessibleName('Done')
+    // Sound cues (FV-14): the start tap unlocks audio and each step speaks once.
+    expect(cues.unlockAudio).toHaveBeenCalled()
+    expect(vi.mocked(cues.speak).mock.calls.map((c) => c[0])).toEqual([
+      'First side',
+      'Switch',
+      'Second side',
+      'Done',
+    ])
   })
 
   it('follows the Seconds field and the Each side toggle', async () => {

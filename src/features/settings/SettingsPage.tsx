@@ -10,6 +10,12 @@ import {
   setDeletionRequested,
   updateMyProfile,
 } from '../../lib/data'
+import { playTone, speak, unlockAudio } from '../../lib/sound/cues'
+import {
+  loadSoundSettings,
+  saveSoundSettings,
+  type SoundSettings,
+} from '../../lib/sound/soundSettings'
 import type { LengthUnit, WeightUnit } from '../../lib/units'
 import controls from '../../styles/controls.module.css'
 import { useAuth } from '../auth/AuthContext'
@@ -78,6 +84,8 @@ export function SettingsPage() {
           </p>
         )}
       </div>
+
+      <SoundPanel />
 
       <ExportPanel />
 
@@ -208,6 +216,67 @@ function ProfileForm() {
         </button>
       </div>
     </form>
+  )
+}
+
+/** Timer sound cues (FV-14), saved on this device only. */
+function SoundPanel() {
+  const [settings, setSettings] = useState<SoundSettings>(loadSoundSettings)
+  const update = (patch: Partial<SoundSettings>) => {
+    const next = { ...settings, ...patch }
+    setSettings(next)
+    saveSoundSettings(next)
+  }
+  const volumePercent = Math.round(settings.volume * 100)
+
+  return (
+    <div className={styles.panel} role="group" aria-labelledby="sound-heading">
+      <h2 id="sound-heading">Sound</h2>
+      <p className={styles.muted}>
+        Cues for the hold and rest timers, so you don't have to watch the screen. Saved on this
+        device only. Phones that vibrate still do.
+      </p>
+      <label className={styles.choice}>
+        <input
+          type="checkbox"
+          checked={settings.voice}
+          onChange={(e) => update({ voice: e.target.checked })}
+        />
+        Voice cues ("Hold", "Release", "Switch", "Done")
+      </label>
+      <label className={styles.choice}>
+        <input
+          type="checkbox"
+          checked={settings.tones}
+          onChange={(e) => update({ tones: e.target.checked })}
+        />
+        Soft 3, 2, 1 countdown tones
+      </label>
+      <Field label="Volume" hint={`${volumePercent}%`}>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={10}
+          value={volumePercent}
+          onChange={(e) => update({ volume: Number(e.target.value) / 100 })}
+        />
+      </Field>
+      <div>
+        <button
+          type="button"
+          className={controls.button}
+          disabled={!settings.voice && !settings.tones}
+          onClick={() => {
+            unlockAudio()
+            playTone()
+            speak('Hold')
+          }}
+        >
+          Test sound
+        </button>
+      </div>
+    </div>
   )
 }
 

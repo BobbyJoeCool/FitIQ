@@ -190,6 +190,7 @@ export function ExerciseLogger({
           showTimer
           perSide={item.targets.perSide}
           releaseSeconds={item.targets.targetReleaseSeconds}
+          isStretch={exercise?.movementType === 'stretching'}
           submitLabel="Complete set"
           disabledReason={offlineReason}
           rest={rest}

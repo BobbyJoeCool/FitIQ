@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { StatusMessage } from '../../components/common/StatusMessage'
 import { buzz, useCountdown } from '../../hooks/useCountdown'
+import { playTone, speak } from '../../lib/sound/cues'
+import { countdownTone } from './timerSteps'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { returnState } from '../../hooks/useReturnTo'
 import { useWakeLock } from '../../hooks/useWakeLock'
@@ -63,7 +65,25 @@ export function ActiveWorkout({
   const [params, setParams] = useSearchParams()
   const now = useNow(15000)
   const [reviewing, setReviewing] = useState(false)
-  const rest = useCountdown(() => buzz([200, 100, 200]))
+  const rest = useCountdown(() => {
+    buzz([200, 100, 200])
+    speak('Rest over')
+  })
+  // Soft 3, 2, 1 at the end of the rest (FV-14).
+  const restLength = useRef(0)
+  const restToned = useRef(-1)
+  useEffect(() => {
+    if (!rest.running || !countdownTone(restLength.current, rest.remaining)) return
+    if (restToned.current === rest.remaining) return
+    restToned.current = rest.remaining
+    playTone(rest.remaining === 1)
+  }, [rest.running, rest.remaining])
+  const startRest = (seconds: number) => {
+    restLength.current = seconds
+    restToned.current = -1
+    speak('Rest')
+    rest.start(seconds)
+  }
   useWakeLock(true)
 
   const byKey = new Map((library ?? []).map((e) => [exerciseKey(e), e]))
@@ -146,7 +166,7 @@ export function ActiveWorkout({
           onSetSaved={() => {
             // Stay on this exercise (don't jump once its target is met); Next moves on.
             if (!params.get('exercise')) go(index)
-            if (current.targets.restSeconds) rest.start(current.targets.restSeconds)
+            if (current.targets.restSeconds) startRest(current.targets.restSeconds)
           }}
         />
       ) : (
