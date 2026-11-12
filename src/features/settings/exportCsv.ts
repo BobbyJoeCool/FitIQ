@@ -130,17 +130,7 @@ export function cardioCsv(rows: CardioSession[]): string {
   )
 }
 
-/** Saves text as a file through a temporary link. */
-export function downloadFile(filename: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }))
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  document.body.append(link)
-  link.click()
-  link.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
+export { downloadFile } from '../../lib/download'
 
 export const exportFilename = (kind: string, now = new Date()) =>
   `fitiq-${kind}-${localDate(now.toISOString())}.csv`

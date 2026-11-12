@@ -467,3 +467,23 @@ describe('starter plans', () => {
     expect(screen.getByText('Hamstring Stretch')).toBeInTheDocument()
   })
 })
+
+describe('sharing a plan as a file (FV-15)', () => {
+  it('downloads the plan as JSON, with custom exercises copied in', async () => {
+    let saved: Blob | null = null
+    const createObjectURL = vi.fn((blob: Blob) => {
+      saved = blob
+      return 'blob:plan'
+    })
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() })
+    const user = userEvent.setup()
+    renderRoute(`/plans/${PLAN_ID}`)
+    await user.click(await screen.findByRole('button', { name: 'Share as file' }))
+    expect(saved).not.toBeNull()
+    const file = JSON.parse(await (saved as unknown as Blob).text())
+    expect(file).toMatchObject({ format: 'fitiq-plan', version: 1, name: 'Push Day' })
+    expect(file.exercises).toHaveLength(3)
+    expect(file.exercises[0]).toMatchObject({ catalogId: 'Barbell_Squat', sets: 3, reps: '8-12' })
+    expect(file.exercises[1].custom).toMatchObject({ name: 'Walking Pad Incline Walk' })
+  })
+})

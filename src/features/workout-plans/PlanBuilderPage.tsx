@@ -12,11 +12,13 @@ import {
   updatePlanExercise,
   type PlanWithExercises,
 } from '../../lib/data'
+import { downloadFile } from '../../lib/download'
 import controls from '../../styles/controls.module.css'
 import { useAuth } from '../auth/AuthContext'
 import { useStartWorkout } from '../workout-sessions/useStartWorkout'
 import { exerciseCount } from './format'
 import { PlanExerciseItem } from './PlanExerciseItem'
+import { planFileName, planFileText } from './planFile'
 import { exerciseKey, fallbackName, indexLibrary, loadPlanScreen } from './planScreen'
 import styles from './plans.module.css'
 
@@ -152,6 +154,23 @@ function PlanBuilder({
         <button type="button" className={controls.button} disabled={busy} onClick={toggleArchived}>
           {plan.isArchived ? 'Restore' : 'Archive'}
         </button>
+        {plan.exercises.length > 0 && (
+          <button
+            type="button"
+            className={controls.button}
+            // Custom exercises are copied into the file from the library, so it must have loaded.
+            disabled={library === null}
+            onClick={() =>
+              downloadFile(
+                planFileName(plan.name),
+                planFileText(plan, library),
+                'application/json;charset=utf-8',
+              )
+            }
+          >
+            Share as file
+          </button>
+        )}
       </div>
       {starter.error && (
         <p className={styles.error} role="alert">

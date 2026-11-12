@@ -36,7 +36,7 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 | FV-12 | [Hold at the top, with a 3-second default release](#fv-12-hold-at-the-top-with-a-3-second-default-release) | Proposed | 1.1.0 repeated holds (done) |
 | FV-13 | [Save workout edits back to the plan](#fv-13-save-workout-edits-back-to-the-plan) | Proposed | Phases 4 and 5 (done) |
 | FV-14 | [Sound and voice cues for the hold timer](#fv-14-sound-and-voice-cues-for-the-hold-timer) | Done in 1.2.0 (#74) | 1.1.0 hold timer (done) |
-| FV-15 | [Share plans as JSON files: export and import](#fv-15-share-plans-as-json-files-export-and-import) | Proposed | Phase 4 (done) |
+| FV-15 | [Share plans as JSON files: export and import](#fv-15-share-plans-as-json-files-export-and-import) | Done in 1.3.0 (#75) | Phase 4 (done) |
 | FV-8 | [Not planned: nutrition, wearables, AI plans, native apps](#fv-8-not-planned) | Not planned | None |
 
 ## Upgrades
@@ -407,7 +407,7 @@ Both modes:
 
 ### FV-15. Share plans as JSON files: export and import
 
-- **Status:** Proposed (requested 2026-11-11)
+- **Status:** Done in 1.3.0 (issue #75). Format in `docs/plan-format.md`; schema in `public/plan.schema.json`. Archived custom exercises don't count as a name match, so a new one is created. Starter plans still live in code (the shared-loader idea below is not done).
 - **Why:** plans are private, so there's no way to hand a good routine to someone else, in the household or outside it, short of rebuilding it exercise by exercise. A file format also lets a routine be written outside the app, by hand or by an AI assistant asked to "make me a FitIQ plan", and then imported in one step.
 - **What:**
   - **Export:** a **Share as file** action on a plan downloads `<plan-name>.fitiq-plan.json`: the plan's name and description, and each exercise in order with its targets (sets, reps, hold seconds, per side, release, rest, notes). No user IDs, plan IDs, dates, or workout history go in the file.

@@ -11,7 +11,6 @@ Planned or wanted after v1. Details, dependencies, and status for each are in [`
 - **Default rest** (FV-11): set a default rest period in Settings or per plan, used between sets and between exercises. Each exercise follows the default, adjusts it with −/+, or uses its own set time.
 - **Hold at the top** (FV-12): mark exercises with a hold at the top of each rep. They get a 3-second release by default, which each exercise can override.
 - **Save workout edits to the plan** (FV-13): when you change an exercise's targets during a workout, choose whether the change also updates the plan.
-- **Share plans as files** (FV-15): export a plan as a JSON file and import one into your own plans, so routines can be shared, or written outside the app (including by an AI assistant) and imported.
 - **Programs** (FV-7): group plans into a split, by rotation or a weekly schedule, so the dashboard knows today's workout.
 - **Offline workout logging with sync** (FV-2): queue sets on the phone without signal and sync them later.
 - **Move the backend to the home server** (FV-3): self-host Auth and Postgres. Only the two frontend settings change.
@@ -19,6 +18,20 @@ Planned or wanted after v1. Details, dependencies, and status for each are in [`
 - **Import the exercise catalog into Postgres** (FV-5): edit or extend catalog exercises, and stop depending on a CDN.
 - **Delete plans that no workout uses** (FV-6): today plans can only be archived.
 - **Kinds of stretch** (FV-1, item 5): tag stretches as static, dynamic, or foam rolling, for warm-up and cool-down starters.
+
+## [1.3.0] — 2026-11-12
+
+Plan files: share a plan, or import one (FV-15, [#75](https://github.com/BobbyJoeCool/FitIQ/issues/75)). No migration.
+
+### Added
+
+- **Share as file** on a plan downloads it as `<plan-name>.fitiq-plan.json`: the name, description, and each exercise with its targets. Custom exercises are copied in, so the file works in another account. No IDs, dates, or workout history go in the file.
+- **Plans → Import a plan** opens a plan file and shows a preview first: each exercise with its targets, any that aren't in the exercise library (skipped), and custom exercises that will match one of yours by name or be added. **Import plan** creates a new plan; nothing you already have changes.
+- [`docs/plan-format.md`](docs/plan-format.md) documents the format with examples, and [`public/plan.schema.json`](public/plan.schema.json) describes it as JSON Schema, so a plan can be written by hand or by an AI assistant and imported.
+
+### Security
+
+- Imported files are treated as untrusted: each exercise passes the plan builder's validation, files over 200 KB or 100 exercises are refused, and everything is saved through the normal data layer as the signed-in user, so row-level security applies as for any plan.
 
 ## [1.2.0] — 2026-11-12
 
@@ -116,6 +129,7 @@ The first release: a private workout and progress tracker for a household of 2 t
 - **Back** after editing a custom exercise returns to the library ([#53](https://github.com/BobbyJoeCool/FitIQ/issues/53)).
 - "Last time" and exercise history order by the workout's date, not by when the row was saved, so back-dated or imported workouts show correctly.
 
+[1.3.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.3.0
 [1.2.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.2.0
 [1.1.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.1.0
 [1.0.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.0.0

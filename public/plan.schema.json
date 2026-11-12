@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bobbyjoecool.github.io/FitIQ/plan.schema.json",
+  "title": "FitIQ plan file",
+  "description": "A FitIQ workout plan, version 1. See docs/plan-format.md in the FitIQ repository. Unknown fields are ignored on import.",
+  "type": "object",
+  "required": ["format", "version", "name", "exercises"],
+  "properties": {
+    "format": { "const": "fitiq-plan" },
+    "version": { "const": 1 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "description": { "type": ["string", "null"], "maxLength": 1000 },
+    "exercises": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": { "$ref": "#/$defs/exercise" }
+    }
+  },
+  "$defs": {
+    "exercise": {
+      "type": "object",
+      "description": "One exercise, in plan order. Exactly one of catalogId or custom.",
+      "oneOf": [
+        { "required": ["catalogId"], "not": { "required": ["custom"] } },
+        { "required": ["custom"], "not": { "required": ["catalogId"] } }
+      ],
+      "properties": {
+        "catalogId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Free Exercise DB ID, e.g. \"Barbell_Squat\" (the `id` field in dist/exercises.json at FitIQ's pinned commit)."
+        },
+        "name": {
+          "type": "string",
+          "description": "The exercise name, for people reading the file. Ignored on import for catalog exercises."
+        },
+        "custom": { "$ref": "#/$defs/customExercise" },
+        "sets": { "type": ["integer", "null"], "minimum": 1, "maximum": 20 },
+        "reps": {
+          "type": ["string", "integer", "null"],
+          "maxLength": 20,
+          "description": "Text so it can hold a range: \"8-12\", \"10\", \"AMRAP\". With releaseSeconds, the number of holds."
+        },
+        "seconds": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 600,
+          "description": "Hold or work time per set (stretches, planks, timed holds)."
+        },
+        "releaseSeconds": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 600,
+          "description": "Break between repeated holds in a set. Needs seconds."
+        },
+        "perSide": {
+          "type": "boolean",
+          "default": false,
+          "description": "The target applies to each side (left and right)."
+        },
+        "restSeconds": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 3600,
+          "description": "Rest after each set."
+        },
+        "notes": { "type": ["string", "null"], "maxLength": 500 }
+      }
+    },
+    "customExercise": {
+      "type": "object",
+      "description": "An exercise that isn't in the catalog. On import it matches one of the importer's own custom exercises by name, or is created.",
+      "required": ["name", "primaryMuscles"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "description": { "type": ["string", "null"], "maxLength": 2000 },
+        "primaryMuscles": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/muscle" }
+        },
+        "secondaryMuscles": { "type": "array", "items": { "$ref": "#/$defs/muscle" } },
+        "equipment": {
+          "enum": [
+            null,
+            "bands",
+            "barbell",
+            "body only",
+            "cable",
+            "dumbbell",
+            "e-z curl bar",
+            "exercise ball",
+            "foam roll",
+            "kettlebells",
+            "machine",
+            "medicine ball",
+            "other"
+          ]
+        },
+        "difficulty": { "enum": [null, "beginner", "intermediate", "expert"] },
+        "movementType": {
+          "enum": [
+            null,
+            "cardio",
+            "olympic weightlifting",
+            "plyometrics",
+            "powerlifting",
+            "strength",
+            "stretching",
+            "strongman"
+          ]
+        },
+        "videoUrl": {
+          "type": ["string", "null"],
+          "pattern": "^https?://\\S+$",
+          "maxLength": 500
+        },
+        "videoSourceName": { "type": ["string", "null"], "maxLength": 80 }
+      }
+    },
+    "muscle": {
+      "enum": [
+        "abdominals",
+        "abductors",
+        "adductors",
+        "biceps",
+        "calves",
+        "chest",
+        "forearms",
+        "glutes",
+        "hamstrings",
+        "lats",
+        "lower back",
+        "middle back",
+        "neck",
+        "quadriceps",
+        "shoulders",
+        "traps",
+        "triceps"
+      ]
+    }
+  }
+}
