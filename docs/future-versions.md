@@ -36,6 +36,7 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 | FV-12 | [Hold at the top, with a 3-second default release](#fv-12-hold-at-the-top-with-a-3-second-default-release) | Proposed | 1.1.0 repeated holds (done) |
 | FV-13 | [Save workout edits back to the plan](#fv-13-save-workout-edits-back-to-the-plan) | Proposed | Phases 4 and 5 (done) |
 | FV-14 | [Sound and voice cues for the hold timer](#fv-14-sound-and-voice-cues-for-the-hold-timer) | Proposed | 1.1.0 hold timer (done) |
+| FV-15 | [Share plans as JSON files: export and import](#fv-15-share-plans-as-json-files-export-and-import) | Proposed | Phase 4 (done) |
 | FV-8 | [Not planned: nutrition, wearables, AI plans, native apps](#fv-8-not-planned) | Not planned | None |
 
 ## Upgrades
@@ -403,6 +404,27 @@ Both modes:
 - **Depends on:** 1.1.0's hold timer (done).
 - **Data and security:** none. No schema change; the sound settings live in the browser's local storage, with the app working the same if it's unavailable.
 - **Source:** Bob, 2026-11-10.
+
+### FV-15. Share plans as JSON files: export and import
+
+- **Status:** Proposed (requested 2026-11-11)
+- **Why:** plans are private, so there's no way to hand a good routine to someone else, in the household or outside it, short of rebuilding it exercise by exercise. A file format also lets a routine be written outside the app, by hand or by an AI assistant asked to "make me a FitIQ plan", and then imported in one step.
+- **What:**
+  - **Export:** a **Share as file** action on a plan downloads `<plan-name>.fitiq-plan.json`: the plan's name and description, and each exercise in order with its targets (sets, reps, hold seconds, per side, release, rest, notes). No user IDs, plan IDs, dates, or workout history go in the file.
+  - **Import:** **Import a plan** on the Plans screen (next to **New plan** and **Use a starter plan**) opens a file, shows a preview of the plan and any problems, and on **Import** creates a new plan in your own account. It never changes an existing plan, so importing the same file twice gives two plans.
+  - **Catalog exercises** are written by their Free Exercise DB ID, with the exercise name alongside for people reading the file. An ID that isn't in the pinned catalog is listed in the preview; you can skip that exercise or cancel.
+  - **Custom exercises** travel as a copy of their definition (name, muscles, equipment, description). On import, each one is matched by name to one of your own custom exercises, or created as a new custom exercise if you have none by that name. The preview says which.
+  - **A documented format:** `docs/plan-format.md` explains each field with a complete example, and a JSON Schema (`public/plan.schema.json`) describes it for tools. The file carries `"format": "fitiq-plan"` and a `"version"` number, so later fields (FV-11's rest default, FV-12's hold at the top) can be added without breaking older files. An AI assistant given the doc, or the schema, can write a file that imports cleanly.
+  - **Unknown fields are ignored** and missing optional fields get their usual defaults, so a hand-written file only needs a name and a list of exercise IDs.
+- **Decided:** a file, not a share link. Nothing is stored on the server for sharing, so plans stay private (plan.md section 2) and there's no public endpoint. The person you send it to needs their own FitIQ account to import it.
+- **Things to check when it's built:**
+  - The import runs every exercise through the same validation as the plan builder (`src/lib/validation.ts`), so a file can't create a plan the app couldn't create itself: name lengths, sets 1 to 20, seconds 1 to 600, release only with a hold.
+  - A size cap on the file (say 200 KB and 100 exercises) and clear error messages for a file that isn't JSON or isn't a FitIQ plan.
+  - On iPhone, the file download and the file picker both work from the installed PWA.
+  - A starter plan (FV-1) could be stored in the same format, so starters and imports share one loader.
+- **Depends on:** Phase 4 plans (done). Works with FV-1 starter plans; FV-11 and FV-12 add fields to the format when they're built.
+- **Data and security:** no schema change. The import inserts a plan and its exercises through `src/lib/data/plans.ts` (and `customExercises.ts` for new custom exercises) as the signed-in user, so RLS and the ownership triggers apply as for any plan; IDs in the file are never used. The file is untrusted input: it's parsed as data only, validated before anything is written, and its text is shown as plain text, never HTML. The RLS test gets no new case, since no new table or policy is involved.
+- **Source:** Bob, 2026-11-11.
 
 ### FV-8. Not planned
 
