@@ -136,7 +136,7 @@ PostgreSQL, UUID primary keys, UTC timestamps, foreign keys and indexes on owner
 - Null is allowed where a field does not apply (a plank has duration, not reps).
 - A plan or session exercise points at exactly one of `catalog_exercise_id` or `custom_exercise_id` (CHECK constraint). The catalog ID has no foreign key because the catalog is not in the database.
 - Store each set's own weight unit so changing a unit preference never rewrites history. New accounts default to `lb` and `in`.
-- Archive plans and exercises instead of deleting them when sessions reference them.
+- Archive plans and exercises instead of deleting them when sessions reference them. A plan no session references can be deleted (1.4.0, ADR 0001).
 - Editing or archiving a plan must never change completed sessions. Sessions copy what was performed, not a live reference to plan targets.
 - Delete behavior (cascade vs restrict) is decided per relationship before the first migration.
 
@@ -144,7 +144,7 @@ PostgreSQL, UUID primary keys, UTC timestamps, foreign keys and indexes on owner
 
 1. **Dashboard:** today's planned workout, Start Workout, recent activity, latest weight, quick links. Few charts.
 2. **Exercise library:** search, filters, detail view, create custom exercise.
-3. **Plan builder:** create, edit, reorder, set targets and rest, archive, share as a file, and import a plan file (format in `docs/plan-format.md`).
+3. **Plan builder:** create, edit, reorder, set targets and rest, archive, delete a plan no workout has used, share as a file, and import a plan file (format in `docs/plan-format.md`).
 4. **Active workout:** built for one-handed phone use. Per exercise: name, demo link, planned vs actual sets, enter reps and weight, mark sets complete, skip, next. Each completed set saves to Supabase immediately, with visible saving and error states and a retry button. A closed browser or sleeping phone must not lose completed sets.
 5. **Progress:** weight chart, workout frequency, total workouts, per-exercise history, measurement charts, personal records where reliably computable. Use clear date ranges and units, and avoid implying that scale changes over days mean fat gain or loss.
 6. **Cardio:** activity type, duration, distance, incline, notes. Walking pad is a named preset.
@@ -239,7 +239,7 @@ Each phase ends with something working and deployed.
 |---|---|
 | Must | Individual sign-in, private records, exercise search and detail, exercise images or demo links, plans, set logging, workout history, weight history, mobile layout, installable PWA |
 | Should | Body measurements, cardio and walking pad, CSV export |
-| Later | Offline logging with sync, family sharing and challenges, nutrition, wearables, self-hosted backend move (needs public HTTPS access, section 5), importing the exercise catalog into Postgres, an email sender on `bobbyjoecool.dev` so invite and reset emails reach the household, cardio items in workout plans, a default rest period that exercises follow, adjust, or override, a hold-at-the-top option with a 3-second default release, and saving workout edits back to the plan. Tracked in [`docs/future-versions.md`](docs/future-versions.md). Shipped since v1: sound and voice cues for the hold timer (1.2.0), plan files for sharing and importing plans (1.3.0) |
+| Later | Offline logging with sync, family sharing and challenges, nutrition, wearables, self-hosted backend move (needs public HTTPS access, section 5), importing the exercise catalog into Postgres, an email sender on `bobbyjoecool.dev` so invite and reset emails reach the household, cardio items in workout plans, a default rest period that exercises follow, adjust, or override, a hold-at-the-top option with a 3-second default release, and saving workout edits back to the plan. Tracked in [`docs/future-versions.md`](docs/future-versions.md). Shipped since v1: sound and voice cues for the hold timer (1.2.0), plan files for sharing and importing plans (1.3.0), deleting plans no workout uses (1.4.0) |
 
 ## 16. Risks
 

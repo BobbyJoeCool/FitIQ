@@ -28,7 +28,7 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 | FV-3 | [Move the backend to the home server](#fv-3-move-the-backend-to-the-home-server) | Idea | v1 done |
 | FV-4 | [Opt-in family sharing and challenges](#fv-4-opt-in-family-sharing-and-challenges) | Idea | v1 done |
 | FV-5 | [Import the exercise catalog into Postgres](#fv-5-import-the-exercise-catalog-into-postgres) | Idea | None |
-| FV-6 | [Delete plans that no workout uses](#fv-6-delete-plans-that-no-workout-uses) | Idea | Phase 5 sessions |
+| FV-6 | [Delete plans that no workout uses](#fv-6-delete-plans-that-no-workout-uses) | Done in 1.4.0 (#76) | Phase 5 sessions |
 | FV-7 | [Programs: training by day, by rotation or weekly schedule](#fv-7-programs-training-by-day-by-rotation-or-weekly-schedule) | Proposed | Phase 4 (done); best before Phase 5 and 6.5 |
 | FV-9 | [Email sender on bobbyjoecool.dev](#fv-9-email-sender-on-bobbyjoecooldev) | Proposed | None |
 | FV-10 | [Cardio in workout plans](#fv-10-cardio-in-workout-plans) | Proposed | Phases 4, 5 and 7 (done) |
@@ -257,7 +257,7 @@ All have images. Levels: 82 beginner, 29 intermediate, 12 expert. **Kind** is a 
 
 ### FV-6. Delete plans that no workout uses
 
-- **Status:** Idea
+- **Status:** Done in 1.4.0 (issue #76). Migration `20261112000000_delete_unused_plans.sql`; ADR 0001 amended.
 - **Why:** plans made by mistake can only be archived (ADR 0001).
 - **What:** a Delete button, only for plans that no session references; anything else stays archive-only.
 - **Depends on:** Phase 5 (sessions reference plans).

@@ -16,8 +16,19 @@ Planned or wanted after v1. Details, dependencies, and status for each are in [`
 - **Move the backend to the home server** (FV-3): self-host Auth and Postgres. Only the two frontend settings change.
 - **Opt-in family sharing and challenges** (FV-4): each person chooses what to share and with whom.
 - **Import the exercise catalog into Postgres** (FV-5): edit or extend catalog exercises, and stop depending on a CDN.
-- **Delete plans that no workout uses** (FV-6): today plans can only be archived.
 - **Kinds of stretch** (FV-1, item 5): tag stretches as static, dynamic, or foam rolling, for warm-up and cool-down starters.
+
+## [1.4.0] — 2026-11-12
+
+Delete plans that no workout has used (FV-6, [#76](https://github.com/BobbyJoeCool/FitIQ/issues/76)). One migration, `20261112000000_delete_unused_plans.sql`.
+
+### Added
+
+- **Delete** on a plan that no workout has been started from, with a confirmation. Its exercises go with it. Plans you've done a workout from stay archive-only, and say so, so your history keeps its link.
+
+### Security
+
+- A new row-level security policy lets you delete only your own plans, and only when no workout references them. The RLS test covers deleting the other account's plan, a plan in use, and a plan once its workouts are gone. [ADR 0001](docs/adr/0001-delete-behavior.md) records the change.
 
 ## [1.3.0] — 2026-11-12
 
@@ -129,6 +140,7 @@ The first release: a private workout and progress tracker for a household of 2 t
 - **Back** after editing a custom exercise returns to the library ([#53](https://github.com/BobbyJoeCool/FitIQ/issues/53)).
 - "Last time" and exercise history order by the workout's date, not by when the row was saved, so back-dated or imported workouts show correctly.
 
+[1.4.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.4.0
 [1.3.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.3.0
 [1.2.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.2.0
 [1.1.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.1.0

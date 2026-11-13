@@ -1,5 +1,5 @@
 import { getSupabase } from '../supabase'
-import { toDataError } from './errors'
+import { DataError, toDataError } from './errors'
 import type { ExerciseSource } from './exerciseTypes'
 
 /** A reusable routine (plan.md sections 8 and 9.3). */
@@ -203,6 +203,38 @@ export async function setPlanArchived(userId: string, id: string, archived: bool
     .select('id')
     .single()
   if (error) throw toDataError(error, 'Could not update the plan.')
+}
+
+/** Whether any workout (in progress or finished) was started from this plan. */
+export async function isPlanUsed(userId: string, planId: string): Promise<boolean> {
+  const { data, error } = await getSupabase()
+    .from('workout_sessions')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('plan_id', planId)
+    .limit(1)
+  if (error) throw toDataError(error, 'Could not check the plan.')
+  return data.length > 0
+}
+
+/**
+ * Deletes a plan and its exercises (FV-6). The database allows it only when
+ * no workout references the plan; anything else stays archive-only (ADR 0001).
+ */
+export async function deletePlan(userId: string, id: string): Promise<void> {
+  const { data, error } = await getSupabase()
+    .from('workout_plans')
+    .delete()
+    .eq('user_id', userId)
+    .eq('id', id)
+    .select('id')
+  if (error) throw toDataError(error, 'Could not delete the plan.')
+  if (data.length === 0) {
+    throw new DataError(
+      "This plan has been used in a workout, so it can't be deleted. Archive it instead.",
+      'plan_in_use',
+    )
+  }
 }
 
 /** Adds an exercise to the end of a plan. */

@@ -77,6 +77,54 @@ const TABLES = [
     foreignInsert: (otherUserId) => ({ user_id: otherUserId, name: MARKER }),
     ensureOwnRow: (client, userId) =>
       ensureRow(client, userId, 'workout_plans', { name: 'RLS test plan', is_archived: true }),
+    // Delete is allowed only for your own plans that no workout uses (FV-6).
+    crossChecks: async (me, other) => {
+      const tag = `workout_plans [${me.label} -> ${other.label}]`
+      const newPlan = async (client) => {
+        const { data, error } = await client
+          .from('workout_plans')
+          .insert({ name: MARKER, is_archived: true })
+          .select('id')
+          .single()
+        if (error) throw new Error(`workout_plans insert: ${error.message}`)
+        return data.id
+      }
+      const deletePlan = (client, id) =>
+        client.from('workout_plans').delete().eq('id', id).select('id')
+
+      const theirs = await newPlan(other.client)
+      const delTheirs = await deletePlan(me.client, theirs)
+      check(
+        !!delTheirs.error || delTheirs.data.length === 0,
+        `${tag} cannot delete the other user's unused plan`,
+      )
+      await deletePlan(other.client, theirs)
+
+      const used = await newPlan(me.client)
+      const session = await me.client
+        .from('workout_sessions')
+        .insert({
+          name: MARKER,
+          plan_id: used,
+          started_at: '2026-01-03T10:00:00Z',
+          completed_at: '2026-01-03T11:00:00Z',
+        })
+        .select('id')
+        .single()
+      if (session.error) throw new Error(`workout_sessions insert: ${session.error.message}`)
+      const delUsed = await deletePlan(me.client, used)
+      check(
+        !!delUsed.error || delUsed.data.length === 0,
+        `${tag} cannot delete own plan that a workout uses`,
+      )
+      await me.client.from('workout_sessions').delete().eq('id', session.data.id)
+
+      const delUnused = await deletePlan(me.client, used)
+      check(
+        !delUnused.error && delUnused.data.length === 1,
+        `${tag} can delete own plan once no workout uses it`,
+      )
+    },
   },
   {
     name: 'workout_plan_exercises',

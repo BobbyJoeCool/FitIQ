@@ -22,6 +22,7 @@ beforeEach(() => {
   vi.mocked(data.onAuthChange).mockReturnValue(() => {})
   vi.mocked(data.loadExerciseLibrary).mockResolvedValue(LIBRARY)
   vi.mocked(data.getMyPlan).mockResolvedValue(null)
+  vi.mocked(data.isPlanUsed).mockResolvedValue(false)
   vi.mocked(data.createPlan).mockResolvedValue(NEW_PLAN)
   vi.mocked(data.addExercisesToPlan).mockResolvedValue()
   vi.mocked(data.createCustomExercise).mockResolvedValue(
