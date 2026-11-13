@@ -120,12 +120,12 @@ PostgreSQL, UUID primary keys, UTC timestamps, foreign keys and indexes on owner
 
 | Table | Key fields |
 |---|---|
-| `profiles` | id (= auth user ID), display_name, preferred weight unit (default `lb`), preferred length unit (default `in`), timestamps |
+| `profiles` | id (= auth user ID), display_name, preferred weight unit (default `lb`), preferred length unit (default `in`), default_rest_seconds (null: off), timestamps |
 | `custom_exercises` | id, user_id, name, description, primary_muscles, secondary_muscles, equipment, difficulty, movement_type, video_url, video_source_name, is_archived, timestamps |
-| `workout_plans` | id, user_id, name, description, is_archived, timestamps |
-| `workout_plan_exercises` | id, user_id, plan_id, catalog_exercise_id (text, nullable), custom_exercise_id (nullable), sort_order, target_sets, target_reps (text, allows "8-12"), rest_seconds, target_seconds (hold), target_release_seconds (break between repeated holds), per_side, notes |
+| `workout_plans` | id, user_id, name, description, default_rest_seconds (null: use the profile's), is_archived, timestamps |
+| `workout_plan_exercises` | id, user_id, plan_id, catalog_exercise_id (text, nullable), custom_exercise_id (nullable), sort_order, target_sets, target_reps (text, allows "8-12"), rest_mode (`default`, `offset`, or `fixed`), rest_offset_seconds (offset only), rest_seconds (fixed only), target_seconds (hold), target_release_seconds (break between repeated holds), per_side, notes |
 | `workout_sessions` | id, user_id, plan_id (nullable), name, started_at, completed_at, notes |
-| `workout_session_exercises` | id, user_id, session_id, catalog_exercise_id (text, nullable), custom_exercise_id (nullable), exercise_name (copied at the time), sort_order, is_skipped, notes, and the plan's targets copied at the start |
+| `workout_session_exercises` | id, user_id, session_id, catalog_exercise_id (text, nullable), custom_exercise_id (nullable), exercise_name (copied at the time), sort_order, is_skipped, notes, and the plan's targets copied at the start, with the rest resolved to seconds |
 | `workout_sets` | id, user_id, session_exercise_id, set_number, reps, weight_value, weight_unit, is_bodyweight (weight_value is then added weight), duration_seconds, distance_value, distance_unit, is_completed, notes |
 | `weight_history` | id, user_id, recorded_at, weight_value, weight_unit, notes |
 | `body_measurements` | id, user_id, recorded_at, measurement_type, measurement_value, measurement_unit, notes |
@@ -148,7 +148,7 @@ PostgreSQL, UUID primary keys, UTC timestamps, foreign keys and indexes on owner
 4. **Active workout:** built for one-handed phone use. Per exercise: name, demo link, planned vs actual sets, enter reps and weight, mark sets complete, skip, next. Each completed set saves to Supabase immediately, with visible saving and error states and a retry button. A closed browser or sleeping phone must not lose completed sets.
 5. **Progress:** weight chart, workout frequency, total workouts, per-exercise history, measurement charts, personal records where reliably computable. Use clear date ranges and units, and avoid implying that scale changes over days mean fat gain or loss.
 6. **Cardio:** activity type, duration, distance, incline, notes. Walking pad is a named preset.
-7. **Settings:** display name, units, timer sound (voice cues, countdown tones and volume, saved per device), sign out, CSV export, privacy info, account deletion workflow.
+7. **Settings:** display name, units, default rest, timer sound (voice cues, countdown tones and volume, saved per device), sign out, CSV export, privacy info, account deletion workflow.
 
 ## 10. PWA (v1 scope)
 
@@ -239,7 +239,7 @@ Each phase ends with something working and deployed.
 |---|---|
 | Must | Individual sign-in, private records, exercise search and detail, exercise images or demo links, plans, set logging, workout history, weight history, mobile layout, installable PWA |
 | Should | Body measurements, cardio and walking pad, CSV export |
-| Later | Offline logging with sync, family sharing and challenges, nutrition, wearables, self-hosted backend move (needs public HTTPS access, section 5), importing the exercise catalog into Postgres, an email sender on `bobbyjoecool.dev` so invite and reset emails reach the household, cardio items in workout plans, a default rest period that exercises follow, adjust, or override, a hold-at-the-top option with a 3-second default release, and saving workout edits back to the plan. Tracked in [`docs/future-versions.md`](docs/future-versions.md). Shipped since v1: sound and voice cues for the hold timer (1.2.0), plan files for sharing and importing plans (1.3.0), deleting plans no workout uses (1.4.0) |
+| Later | Offline logging with sync, family sharing and challenges, nutrition, wearables, self-hosted backend move (needs public HTTPS access, section 5), importing the exercise catalog into Postgres, an email sender on `bobbyjoecool.dev` so invite and reset emails reach the household, cardio items in workout plans, a hold-at-the-top option with a 3-second default release, and saving workout edits back to the plan. Tracked in [`docs/future-versions.md`](docs/future-versions.md). Shipped since v1: sound and voice cues for the hold timer (1.2.0), plan files for sharing and importing plans (1.3.0), deleting plans no workout uses (1.4.0), a default rest that exercises follow, adjust, or override (1.5.0) |
 
 ## 16. Risks
 

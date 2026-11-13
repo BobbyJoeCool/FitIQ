@@ -269,6 +269,7 @@ describe('dashboard (6.5)', () => {
       isArchived: false,
       exerciseCount: 3,
       updatedAt: '',
+      defaultRestSeconds: null,
     })
     vi.mocked(data.listMyPlans).mockResolvedValue([plan('a', 'Push'), plan('b', 'Pull')])
     vi.mocked(data.listFinishedWorkoutDates).mockResolvedValue([

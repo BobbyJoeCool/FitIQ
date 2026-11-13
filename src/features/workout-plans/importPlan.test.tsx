@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as data from '../../lib/data'
-import { NO_TARGETS } from '../../lib/data/plans'
+import { NO_PLAN_TARGETS } from '../../lib/data/plans'
 import { LIBRARY, makeExercise } from '../../test/exerciseFixtures'
 import { renderRoute } from '../../test/renderRoute'
 
@@ -15,6 +15,7 @@ const NEW_PLAN = {
   isArchived: false,
   exerciseCount: 0,
   updatedAt: '2026-11-12T00:00:00Z',
+  defaultRestSeconds: null,
 }
 
 beforeEach(() => {
@@ -70,19 +71,23 @@ describe('importing a plan (FV-15)', () => {
     await user.click(within(preview).getByRole('button', { name: 'Import plan' }))
     expect(await screen.findByText('Plan not found')).toBeInTheDocument() // navigated to the new plan
     expect(data.createCustomExercise).toHaveBeenCalledTimes(1)
-    expect(data.createPlan).toHaveBeenCalledWith({ name: 'Shared Legs', description: null })
+    expect(data.createPlan).toHaveBeenCalledWith({
+      name: 'Shared Legs',
+      description: null,
+      defaultRestSeconds: null,
+    })
     expect(data.addExercisesToPlan).toHaveBeenCalledWith('user-a', NEW_PLAN.id, [
       {
         exercise: { source: 'catalog', id: 'Barbell_Squat' },
-        targets: { ...NO_TARGETS, targetSets: 3, targetReps: '5' },
+        targets: { ...NO_PLAN_TARGETS, targetSets: 3, targetReps: '5' },
       },
       {
         exercise: { source: 'custom', id: 'new-custom' },
-        targets: { ...NO_TARGETS, targetSets: 2 },
+        targets: { ...NO_PLAN_TARGETS, targetSets: 2 },
       },
       {
         exercise: { source: 'custom', id: 'new-custom' },
-        targets: { ...NO_TARGETS, targetSets: 1 },
+        targets: { ...NO_PLAN_TARGETS, targetSets: 1 },
       },
     ])
   })

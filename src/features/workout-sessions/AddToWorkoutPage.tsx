@@ -6,12 +6,14 @@ import { useAsync } from '../../hooks/useAsync'
 import { addSessionExercise, getInProgressSession, loadExerciseLibrary } from '../../lib/data'
 import controls from '../../styles/controls.module.css'
 import { useAuth } from '../auth/AuthContext'
+import { useProfile } from '../profile/ProfileContext'
 import { ExercisePicker } from '../workout-plans/ExercisePicker'
 import { exerciseKey } from '../workout-plans/planScreen'
 
 /** /workout/add: add exercises to the workout in progress (step 5.3). */
 export function AddToWorkoutPage() {
   const { user } = useAuth()
+  const { profile } = useProfile()
   const userId = user?.id ?? ''
   const { state, reload } = useAsync(
     () => Promise.all([getInProgressSession(userId), loadExerciseLibrary(userId)]),
@@ -54,6 +56,8 @@ export function AddToWorkoutPage() {
               state.data[0]!.id,
               { source: exercise.source, id: exercise.id },
               exercise.name,
+              // Added mid-workout, so it follows the Settings default rest (FV-11).
+              profile?.defaultRestSeconds ?? null,
             )
           }}
         />

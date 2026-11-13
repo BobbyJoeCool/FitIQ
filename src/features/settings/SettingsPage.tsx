@@ -17,6 +17,7 @@ import {
   type SoundSettings,
 } from '../../lib/sound/soundSettings'
 import type { LengthUnit, WeightUnit } from '../../lib/units'
+import { validateRestSeconds } from '../../lib/validation'
 import controls from '../../styles/controls.module.css'
 import { useAuth } from '../auth/AuthContext'
 import { useProfile } from '../profile/ProfileContext'
@@ -121,6 +122,8 @@ function ProfileForm() {
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '')
   const [weightUnit, setWeightUnit] = useState<WeightUnit>(profile?.weightUnit ?? 'lb')
   const [lengthUnit, setLengthUnit] = useState<LengthUnit>(profile?.lengthUnit ?? 'in')
+  const [defaultRest, setDefaultRest] = useState(profile?.defaultRestSeconds?.toString() ?? '')
+  const [restError, setRestError] = useState<string | undefined>()
   const [nameError, setNameError] = useState<string | undefined>()
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -136,12 +139,19 @@ function ProfileForm() {
       return
     }
     setNameError(undefined)
+    const defaultRestSeconds = validateRestSeconds(defaultRest)
+    if (defaultRestSeconds === undefined) {
+      setRestError('Use whole seconds from 0 to 3600, or leave it blank for off.')
+      return
+    }
+    setRestError(undefined)
     setSaving(true)
     try {
       const next = await updateMyProfile(user?.id ?? '', {
         displayName: name || null,
         weightUnit,
         lengthUnit,
+        defaultRestSeconds,
       })
       setProfile(next)
       setSaved(true)
@@ -200,6 +210,19 @@ function ProfileForm() {
           </label>
         ))}
       </fieldset>
+      <Field
+        label="Default rest between sets, in seconds"
+        hint="Plan exercises set to follow the default rest this long, unless the plan has its own default. Leave blank for off."
+        error={restError}
+      >
+        <input
+          className={controls.input}
+          inputMode="numeric"
+          placeholder="90"
+          value={defaultRest}
+          onChange={(e) => setDefaultRest(e.target.value)}
+        />
+      </Field>
       <p className={styles.muted}>
         Changing units changes how everything is shown and the default for new entries. Nothing
         you've already logged is rewritten: each entry keeps the unit it was saved in.

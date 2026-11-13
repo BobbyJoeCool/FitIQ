@@ -2,19 +2,39 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bobbyjoecool.github.io/FitIQ/plan.schema.json",
   "title": "FitIQ plan file",
-  "description": "A FitIQ workout plan, version 1. See docs/plan-format.md in the FitIQ repository. Unknown fields are ignored on import.",
+  "description": "A FitIQ workout plan, version 2. See docs/plan-format.md in the FitIQ repository. Unknown fields are ignored on import.",
   "type": "object",
   "required": ["format", "version", "name", "exercises"],
   "properties": {
-    "format": { "const": "fitiq-plan" },
-    "version": { "const": 1 },
-    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
-    "description": { "type": ["string", "null"], "maxLength": 1000 },
+    "format": {
+      "const": "fitiq-plan"
+    },
+    "version": {
+      "enum": [1, 2],
+      "description": "2 adds defaultRestSeconds and restOffsetSeconds. Version 1 files still import."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "description": {
+      "type": ["string", "null"],
+      "maxLength": 1000
+    },
+    "defaultRestSeconds": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 3600,
+      "description": "The plan's default rest between sets. Exercises without restSeconds or restOffsetSeconds follow it."
+    },
     "exercises": {
       "type": "array",
       "minItems": 1,
       "maxItems": 100,
-      "items": { "$ref": "#/$defs/exercise" }
+      "items": {
+        "$ref": "#/$defs/exercise"
+      }
     }
   },
   "$defs": {
@@ -22,8 +42,18 @@
       "type": "object",
       "description": "One exercise, in plan order. Exactly one of catalogId or custom.",
       "oneOf": [
-        { "required": ["catalogId"], "not": { "required": ["custom"] } },
-        { "required": ["custom"], "not": { "required": ["catalogId"] } }
+        {
+          "required": ["catalogId"],
+          "not": {
+            "required": ["custom"]
+          }
+        },
+        {
+          "required": ["custom"],
+          "not": {
+            "required": ["catalogId"]
+          }
+        }
       ],
       "properties": {
         "catalogId": {
@@ -36,8 +66,14 @@
           "type": "string",
           "description": "The exercise name, for people reading the file. Ignored on import for catalog exercises."
         },
-        "custom": { "$ref": "#/$defs/customExercise" },
-        "sets": { "type": ["integer", "null"], "minimum": 1, "maximum": 20 },
+        "custom": {
+          "$ref": "#/$defs/customExercise"
+        },
+        "sets": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 20
+        },
         "reps": {
           "type": ["string", "integer", "null"],
           "maxLength": 20,
@@ -64,9 +100,29 @@
           "type": ["integer", "null"],
           "minimum": 0,
           "maximum": 3600,
-          "description": "Rest after each set."
+          "description": "A set rest after each set, whatever the default is."
         },
-        "notes": { "type": ["string", "null"], "maxLength": 500 }
+        "restOffsetSeconds": {
+          "type": ["integer", "null"],
+          "minimum": -3600,
+          "maximum": 3600,
+          "description": "Rest this much more than the default (negative for less). Not with restSeconds."
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "maxLength": 500
+        }
+      },
+      "not": {
+        "required": ["restSeconds", "restOffsetSeconds"],
+        "properties": {
+          "restSeconds": {
+            "type": "integer"
+          },
+          "restOffsetSeconds": {
+            "type": "integer"
+          }
+        }
       }
     },
     "customExercise": {
@@ -74,14 +130,28 @@
       "description": "An exercise that isn't in the catalog. On import it matches one of the importer's own custom exercises by name, or is created.",
       "required": ["name", "primaryMuscles"],
       "properties": {
-        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
-        "description": { "type": ["string", "null"], "maxLength": 2000 },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "description": {
+          "type": ["string", "null"],
+          "maxLength": 2000
+        },
         "primaryMuscles": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/$defs/muscle" }
+          "items": {
+            "$ref": "#/$defs/muscle"
+          }
         },
-        "secondaryMuscles": { "type": "array", "items": { "$ref": "#/$defs/muscle" } },
+        "secondaryMuscles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/muscle"
+          }
+        },
         "equipment": {
           "enum": [
             null,
@@ -99,7 +169,9 @@
             "other"
           ]
         },
-        "difficulty": { "enum": [null, "beginner", "intermediate", "expert"] },
+        "difficulty": {
+          "enum": [null, "beginner", "intermediate", "expert"]
+        },
         "movementType": {
           "enum": [
             null,
@@ -117,7 +189,10 @@
           "pattern": "^https?://\\S+$",
           "maxLength": 500
         },
-        "videoSourceName": { "type": ["string", "null"], "maxLength": 80 }
+        "videoSourceName": {
+          "type": ["string", "null"],
+          "maxLength": 80
+        }
       }
     },
     "muscle": {

@@ -110,6 +110,7 @@ describe('settings and units (7.2)', () => {
       displayName: 'Alex',
       weightUnit: 'kg',
       lengthUnit: 'cm',
+      defaultRestSeconds: null,
     })
     expect(await within(form).findByRole('status')).toHaveTextContent('Saved.')
 
@@ -127,6 +128,30 @@ describe('settings and units (7.2)', () => {
     expect(screen.getByRole('link', { name: 'Change password' })).toHaveAttribute(
       'href',
       '/set-password',
+    )
+  })
+})
+
+describe('default rest in Settings (FV-11)', () => {
+  it('saves the default rest, and blank turns it off', async () => {
+    vi.mocked(data.updateMyProfile).mockImplementation(async (_id, update) => ({
+      ...profile,
+      ...update,
+    }))
+    const user = userEvent.setup()
+    renderRoute('/settings')
+    const form = await screen.findByRole('form', { name: 'Profile and units' })
+    const field = within(form).getByLabelText('Default rest between sets, in seconds')
+    await user.type(field, 'abc')
+    await user.click(within(form).getByRole('button', { name: 'Save settings' }))
+    expect(field).toHaveAccessibleDescription(/0 to 3600/)
+    expect(data.updateMyProfile).not.toHaveBeenCalled()
+    await user.clear(field)
+    await user.type(field, '90')
+    await user.click(within(form).getByRole('button', { name: 'Save settings' }))
+    expect(data.updateMyProfile).toHaveBeenCalledWith(
+      'user-a',
+      expect.objectContaining({ defaultRestSeconds: 90 }),
     )
   })
 })

@@ -10,6 +10,8 @@ export interface Plan {
   isArchived: boolean
   exerciseCount: number
   updatedAt: string
+  /** This plan's default rest in seconds, overriding Settings (FV-11). Null: use Settings. */
+  defaultRestSeconds: number | null
 }
 
 /** Points at a catalog exercise (dataset ID) or one of the user's own (UUID). */
@@ -18,6 +20,7 @@ export interface ExerciseRef {
   id: string
 }
 
+/** Targets as a workout uses them. A workout's rest is plain seconds (null: no rest timer). */
 export interface PlanTargets {
   targetSets: number | null
   /** Text, so it can hold "8-12", "10", "30 s" or "AMRAP". */
@@ -32,7 +35,19 @@ export interface PlanTargets {
   notes: string | null
 }
 
-export interface PlanExercise extends PlanTargets {
+/**
+ * How a plan exercise rests (FV-11): follow the default (the plan's, else
+ * Settings), adjust it by restOffsetSeconds, or use a set time (restSeconds).
+ */
+export type RestMode = 'default' | 'offset' | 'fixed'
+
+/** A plan exercise's targets. restSeconds is the set time, used only when restMode is fixed. */
+export interface PlanExerciseTargets extends PlanTargets {
+  restMode: RestMode
+  restOffsetSeconds: number | null
+}
+
+export interface PlanExercise extends PlanExerciseTargets {
   id: string
   planId: string
   exercise: ExerciseRef
@@ -46,6 +61,8 @@ export interface PlanWithExercises extends Plan {
 export interface PlanInput {
   name: string
   description: string | null
+  /** Left out: unchanged on update, none on create. */
+  defaultRestSeconds?: number | null
 }
 
 export const NO_TARGETS: PlanTargets = {
@@ -58,12 +75,20 @@ export const NO_TARGETS: PlanTargets = {
   notes: null,
 }
 
+/** A new plan exercise: no targets, resting by the default. */
+export const NO_PLAN_TARGETS: PlanExerciseTargets = {
+  ...NO_TARGETS,
+  restMode: 'default',
+  restOffsetSeconds: null,
+}
+
 interface PlanRow {
   id: string
   name: string
   description: string | null
   is_archived: boolean
   updated_at: string
+  default_rest_seconds: number | null
   workout_plan_exercises?: { count: number }[]
 }
 
@@ -76,15 +101,17 @@ interface PlanExerciseRow {
   target_sets: number | null
   target_reps: string | null
   rest_seconds: number | null
+  rest_mode: RestMode
+  rest_offset_seconds: number | null
   target_seconds: number | null
   target_release_seconds: number | null
   per_side: boolean
   notes: string | null
 }
 
-const PLAN_COLUMNS = 'id, name, description, is_archived, updated_at'
+const PLAN_COLUMNS = 'id, name, description, is_archived, updated_at, default_rest_seconds'
 const PLAN_EXERCISE_COLUMNS =
-  'id, plan_id, catalog_exercise_id, custom_exercise_id, sort_order, target_sets, target_reps, rest_seconds, target_seconds, target_release_seconds, per_side, notes'
+  'id, plan_id, catalog_exercise_id, custom_exercise_id, sort_order, target_sets, target_reps, rest_seconds, rest_mode, rest_offset_seconds, target_seconds, target_release_seconds, per_side, notes'
 
 function planFromRow(row: PlanRow, exerciseCount = 0): Plan {
   return {
@@ -94,6 +121,7 @@ function planFromRow(row: PlanRow, exerciseCount = 0): Plan {
     isArchived: row.is_archived,
     exerciseCount: row.workout_plan_exercises?.[0]?.count ?? exerciseCount,
     updatedAt: row.updated_at,
+    defaultRestSeconds: row.default_rest_seconds,
   }
 }
 
@@ -108,6 +136,8 @@ function planExerciseFromRow(row: PlanExerciseRow): PlanExercise {
     targetSets: row.target_sets,
     targetReps: row.target_reps,
     restSeconds: row.rest_seconds,
+    restMode: row.rest_mode,
+    restOffsetSeconds: row.rest_offset_seconds,
     targetSeconds: row.target_seconds,
     targetReleaseSeconds: row.target_release_seconds,
     perSide: row.per_side,
@@ -115,11 +145,14 @@ function planExerciseFromRow(row: PlanExerciseRow): PlanExercise {
   }
 }
 
-function targetsToRow(targets: PlanTargets) {
+function targetsToRow(targets: PlanExerciseTargets) {
+  // Each mode keeps only its own number, matching the table's CHECKs.
   return {
     target_sets: targets.targetSets,
     target_reps: targets.targetReps,
-    rest_seconds: targets.restSeconds,
+    rest_mode: targets.restMode,
+    rest_seconds: targets.restMode === 'fixed' ? (targets.restSeconds ?? 0) : null,
+    rest_offset_seconds: targets.restMode === 'offset' ? (targets.restOffsetSeconds ?? 0) : null,
     target_seconds: targets.targetSeconds,
     target_release_seconds: targets.targetSeconds ? targets.targetReleaseSeconds : null,
     per_side: targets.perSide,
@@ -175,7 +208,11 @@ export async function getMyPlan(userId: string, id: string): Promise<PlanWithExe
 export async function createPlan(input: PlanInput): Promise<Plan> {
   const { data, error } = await getSupabase()
     .from('workout_plans')
-    .insert({ name: input.name, description: input.description })
+    .insert({
+      name: input.name,
+      description: input.description,
+      default_rest_seconds: input.defaultRestSeconds ?? null,
+    })
     .select(PLAN_COLUMNS)
     .single<PlanRow>()
   if (error) throw toDataError(error, 'Could not save the plan.')
@@ -185,7 +222,13 @@ export async function createPlan(input: PlanInput): Promise<Plan> {
 export async function updatePlan(userId: string, id: string, input: PlanInput): Promise<void> {
   const { error } = await getSupabase()
     .from('workout_plans')
-    .update({ name: input.name, description: input.description })
+    .update({
+      name: input.name,
+      description: input.description,
+      ...(input.defaultRestSeconds !== undefined && {
+        default_rest_seconds: input.defaultRestSeconds,
+      }),
+    })
     .eq('user_id', userId)
     .eq('id', id)
     .select('id')
@@ -242,7 +285,7 @@ export async function addExerciseToPlan(
   userId: string,
   planId: string,
   exercise: ExerciseRef,
-  targets: PlanTargets = NO_TARGETS,
+  targets: PlanExerciseTargets = NO_PLAN_TARGETS,
 ): Promise<PlanExercise> {
   const supabase = getSupabase()
   const last = await supabase
@@ -273,7 +316,7 @@ export async function addExerciseToPlan(
 export async function updatePlanExercise(
   userId: string,
   id: string,
-  targets: PlanTargets,
+  targets: PlanExerciseTargets,
 ): Promise<PlanExercise> {
   const { data, error } = await getSupabase()
     .from('workout_plan_exercises')
@@ -307,7 +350,7 @@ export async function reorderPlanExercises(planId: string, ids: string[]): Promi
 
 export interface NewPlanExercise {
   exercise: ExerciseRef
-  targets: PlanTargets
+  targets: PlanExerciseTargets
 }
 
 /** Adds several exercises to the end of a plan in one request, in the order given. */

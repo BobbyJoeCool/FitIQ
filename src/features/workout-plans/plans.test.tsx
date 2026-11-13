@@ -17,6 +17,7 @@ const plan = (overrides: Partial<Plan> = {}): Plan => ({
   isArchived: false,
   exerciseCount: 3,
   updatedAt: '2026-11-09T00:00:00Z',
+  defaultRestSeconds: null,
   ...overrides,
 })
 
@@ -32,6 +33,8 @@ const item = (id: string, overrides: Partial<PlanExercise> = {}): PlanExercise =
   targetReleaseSeconds: null,
   perSide: false,
   notes: null,
+  restMode: overrides.restSeconds != null ? 'fixed' : 'default',
+  restOffsetSeconds: null,
   ...overrides,
 })
 
@@ -119,7 +122,11 @@ describe('plan form', () => {
     await user.type(await screen.findByLabelText('Name'), '  Push Day ')
     await user.click(screen.getByRole('button', { name: 'Create plan' }))
 
-    expect(data.createPlan).toHaveBeenCalledWith({ name: 'Push Day', description: null })
+    expect(data.createPlan).toHaveBeenCalledWith({
+      name: 'Push Day',
+      description: null,
+      defaultRestSeconds: null,
+    })
     await vi.waitFor(() => expect(router.state.location.pathname).toBe(`/plans/${PLAN_ID}`))
     await user.click(await screen.findByRole('link', { name: '← Plans' }))
     await vi.waitFor(() => expect(router.state.location.pathname).toBe('/plans'))
@@ -139,6 +146,7 @@ describe('plan form', () => {
     expect(data.updatePlan).toHaveBeenCalledWith('user-a', PLAN_ID, {
       name: 'Push Day A',
       description: 'Chest, shoulders, triceps',
+      defaultRestSeconds: null,
     })
     await vi.waitFor(() => expect(router.state.location.pathname).toBe(`/plans/${PLAN_ID}`))
     expect(router.state.historyAction).toBe('POP')
@@ -194,13 +202,16 @@ describe('plan builder', () => {
     await user.clear(within(editor).getByLabelText('Sets'))
     await user.type(within(editor).getByLabelText('Sets'), '3')
     await user.type(within(editor).getByLabelText('Reps'), '30 s')
+    await user.click(within(editor).getByRole('radio', { name: 'Set time' }))
     await user.type(within(editor).getByLabelText('Rest (sec)'), '45')
     await user.click(within(editor).getByRole('button', { name: 'Save targets' }))
 
     expect(data.updatePlanExercise).toHaveBeenCalledWith('user-a', 'e2', {
       targetSets: 3,
       targetReps: '30 s',
+      restMode: 'fixed',
       restSeconds: 45,
+      restOffsetSeconds: null,
       targetSeconds: null,
       targetReleaseSeconds: null,
       perSide: false,
@@ -482,7 +493,7 @@ describe('sharing a plan as a file (FV-15)', () => {
     await user.click(await screen.findByRole('button', { name: 'Share as file' }))
     expect(saved).not.toBeNull()
     const file = JSON.parse(await (saved as unknown as Blob).text())
-    expect(file).toMatchObject({ format: 'fitiq-plan', version: 1, name: 'Push Day' })
+    expect(file).toMatchObject({ format: 'fitiq-plan', version: 2, name: 'Push Day' })
     expect(file.exercises).toHaveLength(3)
     expect(file.exercises[0]).toMatchObject({ catalogId: 'Barbell_Squat', sets: 3, reps: '8-12' })
     expect(file.exercises[1].custom).toMatchObject({ name: 'Walking Pad Incline Walk' })
@@ -531,5 +542,84 @@ describe('deleting an unused plan (FV-6)', () => {
     await user.click(await screen.findByRole('button', { name: 'Delete' }))
     await user.click(screen.getByRole('button', { name: 'Delete plan' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Archive it instead.')
+  })
+})
+
+describe('default rest (FV-11)', () => {
+  const PROFILE = {
+    id: 'user-a',
+    displayName: null,
+    weightUnit: 'lb' as const,
+    lengthUnit: 'in' as const,
+    defaultRestSeconds: 90,
+    deletionRequestedAt: null,
+  }
+
+  it('shows each rest worked out from the Settings default', async () => {
+    vi.mocked(data.getMyProfile).mockResolvedValue(PROFILE)
+    vi.mocked(data.getMyPlan).mockResolvedValue({
+      ...BUILDER,
+      exercises: [
+        item('e1', { targetSets: 3, targetReps: '5' }),
+        item('e2', { restMode: 'offset', restOffsetSeconds: 30, sortOrder: 1 }),
+        item('e3', { restSeconds: 45, sortOrder: 2 }),
+      ],
+    })
+    renderRoute(`/plans/${PLAN_ID}`)
+    expect(await screen.findByText('Default rest: 1:30 (from Settings)')).toBeInTheDocument()
+    expect(screen.getByText('3 × 5 · Rest 1:30 (default)')).toBeInTheDocument()
+    expect(screen.getByText('Rest 2:00 (default + 30 s)')).toBeInTheDocument()
+    expect(screen.getByText('Rest 45 s')).toBeInTheDocument()
+  })
+
+  it("uses the plan's own default over Settings", async () => {
+    vi.mocked(data.getMyProfile).mockResolvedValue(PROFILE)
+    vi.mocked(data.getMyPlan).mockResolvedValue({
+      ...BUILDER,
+      defaultRestSeconds: 120,
+      exercises: [item('e1')],
+    })
+    renderRoute(`/plans/${PLAN_ID}`)
+    expect(await screen.findByText('Default rest: 2:00 (this plan)')).toBeInTheDocument()
+    expect(screen.getByText('Rest 2:00 (default)')).toBeInTheDocument()
+  })
+
+  it('adjusts the default with the − and + steppers', async () => {
+    vi.mocked(data.getMyProfile).mockResolvedValue(PROFILE)
+    vi.mocked(data.updatePlanExercise).mockImplementation(async (_user, id, targets) => ({
+      ...BUILDER.exercises[0],
+      id,
+      ...targets,
+    }))
+    const user = userEvent.setup()
+    renderRoute(`/plans/${PLAN_ID}`)
+    await user.click(await screen.findByRole('button', { name: 'Edit targets for Barbell Squat' }))
+    const editor = screen.getByRole('form', { name: 'Targets for Barbell Squat' })
+    await user.click(within(editor).getByRole('radio', { name: /Default ±/ }))
+    await user.click(within(editor).getByRole('button', { name: '15 seconds more rest' }))
+    await user.click(within(editor).getByRole('button', { name: '15 seconds more rest' }))
+    expect(within(editor).getByLabelText('Seconds from the default')).toHaveValue('+30')
+    expect(editor).toHaveTextContent('The default is 1:30, so this rests 2:00.')
+    await user.click(within(editor).getByRole('button', { name: 'Save targets' }))
+    expect(data.updatePlanExercise).toHaveBeenCalledWith(
+      'user-a',
+      'e1',
+      expect.objectContaining({ restMode: 'offset', restOffsetSeconds: 30, restSeconds: null }),
+    )
+    expect(await screen.findByText(/Rest 2:00 \(default \+ 30 s\)/)).toBeInTheDocument()
+  })
+
+  it('saves a default rest for the plan', async () => {
+    vi.mocked(data.updatePlan).mockResolvedValue()
+    const user = userEvent.setup()
+    renderRoute(`/plans/${PLAN_ID}/edit`)
+    const field = await screen.findByLabelText(/Default rest for this plan/)
+    await user.type(field, '120')
+    await user.click(screen.getByRole('button', { name: 'Save changes' }))
+    expect(data.updatePlan).toHaveBeenCalledWith(
+      'user-a',
+      PLAN_ID,
+      expect.objectContaining({ defaultRestSeconds: 120 }),
+    )
   })
 })

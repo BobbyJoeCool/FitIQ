@@ -14,8 +14,10 @@ import {
   type ExerciseRef,
 } from '../../lib/data'
 import controls from '../../styles/controls.module.css'
+import { effectiveDefaultRest } from '../../lib/rest'
 import { useAuth } from '../auth/AuthContext'
-import { formatTargets } from './format'
+import { useProfile } from '../profile/ProfileContext'
+import { formatPlanTargets } from './format'
 import { parsePlanFile, PLAN_FILE_MAX_BYTES, type ImportItem, type ImportPreview } from './planFile'
 import styles from './plans.module.css'
 
@@ -71,6 +73,11 @@ function Importer({ userId, library }: { userId: string; library: Exercise[] }) 
   const [preview, setPreview] = useState<ImportPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const { profile } = useProfile()
+  const defaultRest = effectiveDefaultRest(
+    preview?.plan.defaultRestSeconds,
+    profile?.defaultRestSeconds,
+  )
 
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -145,8 +152,11 @@ function Importer({ userId, library }: { userId: string; library: Exercise[] }) 
             {preview.items.map((item, i) => (
               <li key={i}>
                 {item.name}
-                {item.kind !== 'unknown' && formatTargets(item.targets) && (
-                  <span className={styles.cardMeta}> · {formatTargets(item.targets)}</span>
+                {item.kind !== 'unknown' && formatPlanTargets(item.targets, defaultRest) && (
+                  <span className={styles.cardMeta}>
+                    {' '}
+                    · {formatPlanTargets(item.targets, defaultRest)}
+                  </span>
                 )}
                 {NOTE[item.kind] && <span className={styles.cardMeta}> ({NOTE[item.kind]})</span>}
               </li>

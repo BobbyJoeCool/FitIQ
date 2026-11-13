@@ -245,6 +245,8 @@ export async function addSessionExercise(
   sessionId: string,
   exercise: ExerciseRef,
   exerciseName: string,
+  /** The rest timer for it: the Settings default rest (FV-11), or null for none. */
+  restSeconds: number | null = null,
 ): Promise<SessionExercise> {
   const supabase = getSupabase()
   const last = await supabase
@@ -264,6 +266,7 @@ export async function addSessionExercise(
       custom_exercise_id: exercise.source === 'custom' ? exercise.id : null,
       exercise_name: exerciseName.slice(0, 200),
       sort_order: (last.data[0]?.sort_order ?? -1) + 1,
+      rest_seconds: restSeconds,
     })
     .select(EXERCISE_COLUMNS)
     .single<ExerciseRow>()

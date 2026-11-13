@@ -32,7 +32,7 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 | FV-7 | [Programs: training by day, by rotation or weekly schedule](#fv-7-programs-training-by-day-by-rotation-or-weekly-schedule) | Proposed | Phase 4 (done); best before Phase 5 and 6.5 |
 | FV-9 | [Email sender on bobbyjoecool.dev](#fv-9-email-sender-on-bobbyjoecooldev) | Proposed | None |
 | FV-10 | [Cardio in workout plans](#fv-10-cardio-in-workout-plans) | Proposed | Phases 4, 5 and 7 (done) |
-| FV-11 | [Default rest, with per-exercise overrides](#fv-11-default-rest-with-per-exercise-overrides) | Proposed | Phases 4 and 5 (done) |
+| FV-11 | [Default rest, with per-exercise overrides](#fv-11-default-rest-with-per-exercise-overrides) | Done in 1.5.0 (#77) | Phases 4 and 5 (done) |
 | FV-12 | [Hold at the top, with a 3-second default release](#fv-12-hold-at-the-top-with-a-3-second-default-release) | Proposed | 1.1.0 repeated holds (done) |
 | FV-13 | [Save workout edits back to the plan](#fv-13-save-workout-edits-back-to-the-plan) | Proposed | Phases 4 and 5 (done) |
 | FV-14 | [Sound and voice cues for the hold timer](#fv-14-sound-and-voice-cues-for-the-hold-timer) | Done in 1.2.0 (#74) | 1.1.0 hold timer (done) |
@@ -330,7 +330,7 @@ Both modes:
 
 ### FV-11. Default rest, with per-exercise overrides
 
-- **Status:** Proposed (requested 2026-11-10)
+- **Status:** Done in 1.5.0 (issue #77). Built as sketched, with these choices: the Settings default starts off (blank), so nothing changes until it's set; the −/+ steppers move 15 s; an offset that would go below 0 rests 0; an offset with no default set gives no rest timer and the plan screen says so; exercises added mid-workout get the Settings default. Between exercises, the rest after an exercise's last set carries on when you tap Next, as before. Plan files moved to version 2 to carry the new fields.
 - **Why:** today every plan exercise needs its own Rest (sec), typed one at a time, and an exercise with no rest set gets no rest timer at all. Most people rest about the same everywhere, with a few exceptions: longer after heavy squats, shorter for accessories.
 - **What:**
   - A **default rest** in Settings (for example 90 s), used by any exercise that doesn't say otherwise, so the rest timer runs everywhere without setup. A plan can optionally set its own default that wins over the Settings one.

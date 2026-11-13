@@ -15,9 +15,11 @@ import {
 } from '../../lib/data'
 import { downloadFile } from '../../lib/download'
 import controls from '../../styles/controls.module.css'
+import { effectiveDefaultRest } from '../../lib/rest'
 import { useAuth } from '../auth/AuthContext'
+import { useProfile } from '../profile/ProfileContext'
 import { useStartWorkout } from '../workout-sessions/useStartWorkout'
-import { exerciseCount } from './format'
+import { exerciseCount, formatRest } from './format'
 import { PlanExerciseItem } from './PlanExerciseItem'
 import { planFileName, planFileText } from './planFile'
 import { exerciseKey, fallbackName, indexLibrary, loadPlanScreen } from './planScreen'
@@ -83,6 +85,8 @@ function PlanBuilder({
   const fromPlan = returnState(location, plan.name)
   const starter = useStartWorkout(() => navigate('/workout'))
   const byKey = indexLibrary(library)
+  const { profile } = useProfile()
+  const defaultRest = effectiveDefaultRest(plan.defaultRestSeconds, profile?.defaultRestSeconds)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [announcement, setAnnouncement] = useState('')
@@ -155,6 +159,12 @@ function PlanBuilder({
         {plan.isArchived && <span className={styles.badge}>Archived</span>}
       </div>
       {plan.description && <p className={styles.description}>{plan.description}</p>}
+      <p className={styles.muted}>
+        Default rest:{' '}
+        {defaultRest === null
+          ? 'off (set one in Settings or Edit details)'
+          : `${formatRest(defaultRest)}${plan.defaultRestSeconds === null ? ' (from Settings)' : ' (this plan)'}`}
+      </p>
 
       <div className={styles.actions}>
         {plan.exercises.length > 0 && !plan.isArchived && (
@@ -276,6 +286,7 @@ function PlanBuilder({
                 count={plan.exercises.length}
                 busy={busy}
                 linkState={fromPlan}
+                defaultRest={defaultRest}
                 onMove={(direction) => move(index, direction)}
                 onSaveTargets={async (targets) => {
                   const saved = await updatePlanExercise(userId, item.id, targets)
