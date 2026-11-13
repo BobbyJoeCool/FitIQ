@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildTimerSteps, timerSummary } from './timerSteps'
+import { buildTimerSteps, countdownTone, cueForStep, timerSummary } from './timerSteps'
 
 const labels = (steps: ReturnType<typeof buildTimerSteps>) =>
   steps.map((s) => `${s.label} ${s.seconds}`)
@@ -55,5 +55,45 @@ describe('timerSummary', () => {
     expect(timerSummary({ seconds: null, perSide: false, releaseSeconds: null, holds: 1 })).toBe(
       'Enter the seconds to start the timer',
     )
+  })
+})
+
+describe('cueForStep (FV-14)', () => {
+  const cues = (steps: ReturnType<typeof buildTimerSteps>, isStretch = false) =>
+    steps.map((s) => cueForStep(s, isStretch))
+
+  it('says Hold, or Stretch for stretches', () => {
+    const steps = buildTimerSteps({ seconds: 30, perSide: false, releaseSeconds: null, holds: 1 })
+    expect(cues(steps)).toEqual(['Hold'])
+    expect(cues(steps, true)).toEqual(['Stretch'])
+  })
+
+  it('names each side and the switch', () => {
+    expect(
+      cues(buildTimerSteps({ seconds: 30, perSide: true, releaseSeconds: null, holds: 1 }), true),
+    ).toEqual(['First side', 'Switch', 'Second side'])
+  })
+
+  it('counts down the last repeated holds', () => {
+    expect(
+      cues(buildTimerSteps({ seconds: 10, perSide: false, releaseSeconds: 3, holds: 4 })),
+    ).toEqual(['Hold', 'Release', 'Hold', 'Release', 'Two more', 'Release', 'Last one'])
+    expect(
+      cues(buildTimerSteps({ seconds: 10, perSide: true, releaseSeconds: 3, holds: 2 })),
+    ).toEqual(['First side', 'Release', 'Last one', 'Switch', 'Second side', 'Release', 'Last one'])
+  })
+})
+
+describe('countdownTone (FV-14)', () => {
+  it('plays in the last three seconds of steps longer than three seconds', () => {
+    expect([5, 4, 3, 2, 1, 0].map((r) => countdownTone(30, r))).toEqual([
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+    ])
+    expect(countdownTone(3, 2)).toBe(false)
   })
 })

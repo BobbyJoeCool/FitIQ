@@ -3,9 +3,17 @@ import type { SetInput } from '../../lib/data'
 import type { DistanceUnit, WeightUnit } from '../../lib/units'
 import controls from '../../styles/controls.module.css'
 import { buzz, useCountdown } from '../../hooks/useCountdown'
+import { playTone, speak, unlockAudio } from '../../lib/sound/cues'
 import { formatDuration } from '../workout-plans/format'
 import { parseSet, toFields, type SetFields } from './setFields'
-import { buildTimerSteps, timerSummary, type TimerStep } from './timerSteps'
+import {
+  buildTimerSteps,
+  countdownTone,
+  cueForStep,
+  DONE_CUE,
+  timerSummary,
+  type TimerStep,
+} from './timerSteps'
 import type { SetMode } from './workoutMath'
 import styles from './workout.module.css'
 
@@ -70,11 +78,14 @@ function HoldTimer({
   perSide,
   releaseSeconds,
   holds,
+  isStretch,
 }: {
   seconds: number | null
   perSide: boolean
   releaseSeconds: number | null
   holds: number
+  /** Stretches say "Stretch" rather than "Hold" (FV-14). */
+  isStretch: boolean
 }) {
   // -1 before starting; steps.length once finished.
   const [index, setIndex] = useState(-1)
@@ -86,14 +97,26 @@ function HoldTimer({
     setIndex(next)
     if (next < steps.length) {
       buzz(steps[next].kind === 'hold' ? [150, 100, 150] : 150)
+      speak(cueForStep(steps[next], isStretch))
       startRef.current(steps[next].seconds)
     } else {
       buzz([300, 100, 300])
+      speak(DONE_CUE)
     }
   })
   useEffect(() => {
     startRef.current = timer.start
   })
+  // The soft 3, 2, 1 before each change (FV-14), once per second.
+  const step = timer.running ? steps[index] : undefined
+  const tonedRef = useRef('')
+  useEffect(() => {
+    if (!step || !countdownTone(step.seconds, timer.remaining)) return
+    const key = `${index}:${timer.remaining}`
+    if (tonedRef.current === key) return
+    tonedRef.current = key
+    playTone(timer.remaining === 1)
+  }, [step, index, timer.remaining])
   const done = index >= 0 && index >= steps.length
   const label = timer.running
     ? steps[index].label
@@ -125,7 +148,10 @@ function HoldTimer({
           disabled={!seconds}
           onClick={() => {
             if (!seconds) return
+            // This tap unlocks sound on iPhone for the rest of the set (FV-14).
+            unlockAudio()
             const sequence = buildTimerSteps({ seconds, perSide, releaseSeconds, holds })
+            speak(cueForStep(sequence[0], isStretch))
             setSteps(sequence)
             setIndex(0)
             timer.start(sequence[0].seconds)
@@ -156,6 +182,7 @@ export function SetForm({
   showTimer,
   perSide,
   releaseSeconds = null,
+  isStretch = false,
   submitLabel,
   disabledReason,
   rest,
@@ -173,6 +200,8 @@ export function SetForm({
   perSide: boolean
   /** Release between repeated holds; with it, the set also records how many holds (reps). */
   releaseSeconds?: number | null
+  /** A stretch: the timer's voice says "Stretch" rather than "Hold". */
+  isStretch?: boolean
   submitLabel: string
   /** Set while saving isn't possible (offline); shown instead of submitting. */
   disabledReason?: string
@@ -193,6 +222,8 @@ export function SetForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (disabledReason) return
+    // Unlocks sound for the rest timer that starts once the set saves (FV-14).
+    unlockAudio()
     const result = parseSet(mode, fields, weightUnit, distanceUnit, { holdsAsReps: intervals })
     if (!result.ok) {
       setError(result.error)
@@ -223,6 +254,7 @@ export function SetForm({
           perSide={sides}
           releaseSeconds={intervals ? releaseSeconds : null}
           holds={wholeIn(fields.reps, 100) ?? 1}
+          isStretch={isStretch}
         />
       )}
       {mode === 'timed' && (

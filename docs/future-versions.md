@@ -35,7 +35,7 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 | FV-11 | [Default rest, with per-exercise overrides](#fv-11-default-rest-with-per-exercise-overrides) | Proposed | Phases 4 and 5 (done) |
 | FV-12 | [Hold at the top, with a 3-second default release](#fv-12-hold-at-the-top-with-a-3-second-default-release) | Proposed | 1.1.0 repeated holds (done) |
 | FV-13 | [Save workout edits back to the plan](#fv-13-save-workout-edits-back-to-the-plan) | Proposed | Phases 4 and 5 (done) |
-| FV-14 | [Sound and voice cues for the hold timer](#fv-14-sound-and-voice-cues-for-the-hold-timer) | Proposed | 1.1.0 hold timer (done) |
+| FV-14 | [Sound and voice cues for the hold timer](#fv-14-sound-and-voice-cues-for-the-hold-timer) | Done in 1.2.0 (#74) | 1.1.0 hold timer (done) |
 | FV-15 | [Share plans as JSON files: export and import](#fv-15-share-plans-as-json-files-export-and-import) | Proposed | Phase 4 (done) |
 | FV-8 | [Not planned: nutrition, wearables, AI plans, native apps](#fv-8-not-planned) | Not planned | None |
 
@@ -383,7 +383,7 @@ Both modes:
 
 ### FV-14. Sound and voice cues for the hold timer
 
-- **Status:** Proposed (requested 2026-11-10)
+- **Status:** Done in 1.2.0 (issue #74). Stretches say "Stretch", other exercises "Hold"; tones skip steps of 3 s or less so they don't talk over the voice. Voice and tones default to on.
 - **Why:** during a stretch or a hold you're not looking at the screen. Today the timer only vibrates, and only on Android: iPhones ignore vibration, so an iPhone user gets no cue at all when a hold ends or it's time to switch sides.
 - **What:**
   - **A soft 3, 2, 1 countdown** before each change: three short, quiet tones in the last three seconds of a hold, release, or switch pause. They're gentle sine tones with a slow fade in and out, not a beep or an alarm, and generated in the browser, so there are no audio files.

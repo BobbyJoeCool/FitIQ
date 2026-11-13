@@ -11,7 +11,6 @@ Planned or wanted after v1. Details, dependencies, and status for each are in [`
 - **Default rest** (FV-11): set a default rest period in Settings or per plan, used between sets and between exercises. Each exercise follows the default, adjusts it with −/+, or uses its own set time.
 - **Hold at the top** (FV-12): mark exercises with a hold at the top of each rep. They get a 3-second release by default, which each exercise can override.
 - **Save workout edits to the plan** (FV-13): when you change an exercise's targets during a workout, choose whether the change also updates the plan.
-- **Sound and voice cues for the hold timer** (FV-14): a soft 3, 2, 1 tone countdown and spoken cues such as "Stretch", "Release", "Switch" and "Done" in the phone's built-in voice, with on/off settings. Useful on iPhones, which don't vibrate.
 - **Share plans as files** (FV-15): export a plan as a JSON file and import one into your own plans, so routines can be shared, or written outside the app (including by an AI assistant) and imported.
 - **Programs** (FV-7): group plans into a split, by rotation or a weekly schedule, so the dashboard knows today's workout.
 - **Offline workout logging with sync** (FV-2): queue sets on the phone without signal and sync them later.
@@ -20,6 +19,20 @@ Planned or wanted after v1. Details, dependencies, and status for each are in [`
 - **Import the exercise catalog into Postgres** (FV-5): edit or extend catalog exercises, and stop depending on a CDN.
 - **Delete plans that no workout uses** (FV-6): today plans can only be archived.
 - **Kinds of stretch** (FV-1, item 5): tag stretches as static, dynamic, or foam rolling, for warm-up and cool-down starters.
+
+## [1.2.0] — 2026-11-12
+
+Sound and voice cues for the timers (FV-14, [#74](https://github.com/BobbyJoeCool/FitIQ/issues/74)). No migration.
+
+### Added
+
+- **Voice cues** from the phone's built-in voice: "Stretch" or "Hold" as a hold starts, "First side" and "Second side", "Release" between repeated holds, "Switch", "Two more" and "Last one" near the end of repeated holds, and "Done". The rest timer says "Rest" and "Rest over".
+- **A soft 3, 2, 1 countdown**: three quiet tones in the last three seconds of each hold, release, switch, and rest longer than three seconds, the last one a little higher.
+- **Settings → Sound**: voice on or off, tones on or off, volume, and a Test sound button. Saved on the device, not the account. Phones that vibrate still do.
+
+### Fixed
+
+- The timers could run their end-of-step action more than once when the phone was slow to redraw, which would have repeated vibrations and cues.
 
 ## [1.1.0] — 2026-11-10
 
@@ -103,5 +116,6 @@ The first release: a private workout and progress tracker for a household of 2 t
 - **Back** after editing a custom exercise returns to the library ([#53](https://github.com/BobbyJoeCool/FitIQ/issues/53)).
 - "Last time" and exercise history order by the workout's date, not by when the row was saved, so back-dated or imported workouts show correctly.
 
+[1.2.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.2.0
 [1.1.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.1.0
 [1.0.0]: https://github.com/BobbyJoeCool/FitIQ/releases/tag/v1.0.0
