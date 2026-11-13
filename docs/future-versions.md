@@ -32,6 +32,11 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 | FV-7 | [Programs: training by day, by rotation or weekly schedule](#fv-7-programs-training-by-day-by-rotation-or-weekly-schedule) | Proposed | Phase 4 (done); best before Phase 5 and 6.5 |
 | FV-9 | [Email sender on bobbyjoecool.dev](#fv-9-email-sender-on-bobbyjoecooldev) | Proposed | None |
 | FV-10 | [Cardio in workout plans](#fv-10-cardio-in-workout-plans) | Proposed | Phases 4, 5 and 7 (done) |
+| FV-11 | [Default rest, with per-exercise overrides](#fv-11-default-rest-with-per-exercise-overrides) | Proposed | Phases 4 and 5 (done) |
+| FV-12 | [Hold at the top, with a 3-second default release](#fv-12-hold-at-the-top-with-a-3-second-default-release) | Proposed | 1.1.0 repeated holds (done) |
+| FV-13 | [Save workout edits back to the plan](#fv-13-save-workout-edits-back-to-the-plan) | Proposed | Phases 4 and 5 (done) |
+| FV-14 | [Sound and voice cues for the hold timer](#fv-14-sound-and-voice-cues-for-the-hold-timer) | Proposed | 1.1.0 hold timer (done) |
+| FV-15 | [Share plans as JSON files: export and import](#fv-15-share-plans-as-json-files-export-and-import) | Proposed | Phase 4 (done) |
 | FV-8 | [Not planned: nutrition, wearables, AI plans, native apps](#fv-8-not-planned) | Not planned | None |
 
 ## Upgrades
@@ -322,6 +327,104 @@ Both modes:
   - `cardio_sessions` gains a nullable `workout_session_id` (set null if the workout is deleted), so a cardio entry made in a workout is the single record, rather than a set plus a separate cardio row.
   - RLS is unchanged in shape, since both tables are owner-only. The ownership trigger must make sure the linked workout belongs to the same user, and the RLS test gets the cross-parent check. ADR 0001 notes what happens to the cardio entry when its workout is deleted.
 - **Source:** Bob, 2026-11-10.
+
+### FV-11. Default rest, with per-exercise overrides
+
+- **Status:** Proposed (requested 2026-11-10)
+- **Why:** today every plan exercise needs its own Rest (sec), typed one at a time, and an exercise with no rest set gets no rest timer at all. Most people rest about the same everywhere, with a few exceptions: longer after heavy squats, shorter for accessories.
+- **What:**
+  - A **default rest** in Settings (for example 90 s), used by any exercise that doesn't say otherwise, so the rest timer runs everywhere without setup. A plan can optionally set its own default that wins over the Settings one.
+  - It also covers the gap **between exercises**: after the last set of an exercise, moving on with Next starts the same default rest unless the exercise says otherwise.
+  - Each plan exercise's rest becomes one of three choices in Edit targets:
+    - **Default:** use the plan's or the Settings default, and follow it if it changes later.
+    - **Default ± seconds:** −/+ steppers adjust from the default (for example "Default + 30 s"), still following it if it changes.
+    - **Set time:** a fixed number of seconds, as today. Existing plans keep their current rest values as set times, so nothing changes for them.
+  - The plan screen shows the result, e.g. "Rest 2:00 (default + 30 s)".
+- **Depends on:** Phases 4 and 5 (done).
+- **Data and security** (a sketch, to settle when it's scheduled):
+  - `profiles.default_rest_seconds` (nullable, 0–3600) and `workout_plans.default_rest_seconds` (nullable, overrides the profile).
+  - `workout_plan_exercises` gains `rest_mode` (`default` | `offset` | `fixed`) and `rest_offset_seconds`. Existing rows become `fixed` with their current `rest_seconds`; rows with no rest become `default`.
+  - When a workout starts, `start_workout` resolves the rest to plain seconds and copies it into `workout_session_exercises.rest_seconds`, as now, so changing a default later never changes past workouts.
+  - No new tables. RLS is unchanged in shape, since profiles, plans and plan exercises are already owner-only.
+- **Source:** Bob, 2026-11-10.
+
+### FV-12. Hold at the top, with a 3-second default release
+
+- **Status:** Proposed (requested 2026-11-10)
+- **Why:** 1.1.0 added repeated holds (hold, release, repeat, #67), but the release time has to be typed for every exercise, and it's the only way to say the exercise has a hold at all. Most hold-at-the-top exercises (ab roller, glute bridge, a paused pull-up) use about the same short release to get back into position.
+- **What:**
+  - Edit targets gets a **Hold at the top of each rep** checkbox. Only exercises with it ticked use the repeated-hold timer and a release time. Every other exercise works as it does now, with no release.
+  - When ticked, the release defaults to **3 seconds**. The Release (sec) field shows the default and can be changed per exercise to override it.
+  - The timer and the set logging work as in 1.1.0: Reps holds of Hold seconds with the release between them, logged as reps.
+  - Optional: make the 3-second default itself a setting in Settings, if 3 s doesn't suit everyone.
+- **Depends on:** 1.1.0's repeated holds (done).
+- **Data and security** (a sketch, to settle when it's scheduled):
+  - `workout_plan_exercises` gains `hold_at_top boolean not null default false`, copied into `workout_session_exercises` by `start_workout`. A null `target_release_seconds` with `hold_at_top` set means "use the default", resolved to 3 s when the workout starts, so past workouts keep the release they used.
+  - Existing rows with a release time become `hold_at_top = true`, so plans set up in 1.1.0 behave the same.
+  - RLS unchanged: both tables are already owner-only.
+- **Source:** Bob, 2026-11-10.
+
+### FV-13. Save workout edits back to the plan
+
+- **Status:** Proposed (requested 2026-11-10)
+- **Why:** a workout copies its plan's targets when it starts, so changes made during the workout stay in that workout. If you find mid-workout that the hold should be 45 s, a stretch shouldn't be per side, or an exercise you added belongs in the plan, you have to remember to go and edit the plan afterwards.
+- **What:**
+  - During a workout, each exercise gets **Edit targets**, the same form as on the plan: sets, reps, rest, hold, release, each side, and notes. Today only the Each side toggle and the per-set fields can change mid-workout.
+  - Every edit made during a workout offers **Also change the plan**, off by default. Without it, the change applies to this workout only, as today. With it, the same change is saved to the plan exercise the workout came from.
+  - The Each side toggle and the Seconds field on a timed set offer the same choice, so a hold time that's changed mid-set can become the plan's new target.
+  - An exercise added mid-workout offers **Add to the plan too**, which adds it at the end of the plan. Skipping an exercise doesn't change the plan.
+  - Only the plan this workout started from can change. An empty workout (no plan) has no option, and past workouts are never changed.
+- **Depends on:** Phases 4 and 5 (done).
+- **Data and security** (a sketch, to settle when it's scheduled):
+  - `workout_session_exercises` needs a link back to its plan exercise (a nullable `plan_exercise_id`, set null if the plan exercise is removed), set by `start_workout`, so an edit knows which plan row to update.
+  - Session targets become editable: column `update` grants for the target columns on `workout_session_exercises`, which aren't granted today.
+  - Saving to the plan is an ordinary update through `src/lib/data/plans.ts`, so RLS and the ownership triggers apply as they do now. The RLS test gets a case that a workout can't change another user's plan through the link.
+- **Source:** Bob, 2026-11-10.
+
+### FV-14. Sound and voice cues for the hold timer
+
+- **Status:** Proposed (requested 2026-11-10)
+- **Why:** during a stretch or a hold you're not looking at the screen. Today the timer only vibrates, and only on Android: iPhones ignore vibration, so an iPhone user gets no cue at all when a hold ends or it's time to switch sides.
+- **What:**
+  - **A soft 3, 2, 1 countdown** before each change: three short, quiet tones in the last three seconds of a hold, release, or switch pause. They're gentle sine tones with a slow fade in and out, not a beep or an alarm, and generated in the browser, so there are no audio files.
+  - **Spoken cues** from the phone's built-in voice (the browser's text-to-speech), at a calm rate and moderate volume:
+    - "Stretch" or "Hold" as a hold starts, and "First side" / "Second side" for per-side holds
+    - "Release" between repeated holds (1.1.0, and FV-12), then "Hold" again
+    - "Switch" at the switch-sides pause
+    - "Two more", "Last one" near the end of repeated holds
+    - "Done" at the end of the set
+    - Optionally "Rest" and "Rest over" for the rest timer between sets
+  - **Settings → Sound:** voice on or off, tones on or off, and a volume level. Saved per device rather than per account, since the right choice depends on the phone and where you're working out. Vibration stays where it's supported.
+  - The cues follow the timer steps already built in `src/features/workout-sessions/timerSteps.ts`, so each step kind maps to a phrase.
+- **Decided:** use the device's built-in voice, not recorded clips. It's free, works offline, and phrases can change without new recordings. It sounds a little different on iPhone and Android.
+- **Things to check when it's built:**
+  - iPhone Safari only allows sound after a tap, so tapping **Start timer** has to unlock audio and speech for the rest of the set.
+  - Cues should mix with the user's own music rather than pause it, where the browser allows.
+  - When the screen locks, the browser may pause sound; the workout screen already keeps the screen awake (`useWakeLock`) where the browser supports it, which should cover most cases.
+- **Depends on:** 1.1.0's hold timer (done).
+- **Data and security:** none. No schema change; the sound settings live in the browser's local storage, with the app working the same if it's unavailable.
+- **Source:** Bob, 2026-11-10.
+
+### FV-15. Share plans as JSON files: export and import
+
+- **Status:** Proposed (requested 2026-11-11)
+- **Why:** plans are private, so there's no way to hand a good routine to someone else, in the household or outside it, short of rebuilding it exercise by exercise. A file format also lets a routine be written outside the app, by hand or by an AI assistant asked to "make me a FitIQ plan", and then imported in one step.
+- **What:**
+  - **Export:** a **Share as file** action on a plan downloads `<plan-name>.fitiq-plan.json`: the plan's name and description, and each exercise in order with its targets (sets, reps, hold seconds, per side, release, rest, notes). No user IDs, plan IDs, dates, or workout history go in the file.
+  - **Import:** **Import a plan** on the Plans screen (next to **New plan** and **Use a starter plan**) opens a file, shows a preview of the plan and any problems, and on **Import** creates a new plan in your own account. It never changes an existing plan, so importing the same file twice gives two plans.
+  - **Catalog exercises** are written by their Free Exercise DB ID, with the exercise name alongside for people reading the file. An ID that isn't in the pinned catalog is listed in the preview; you can skip that exercise or cancel.
+  - **Custom exercises** travel as a copy of their definition (name, muscles, equipment, description). On import, each one is matched by name to one of your own custom exercises, or created as a new custom exercise if you have none by that name. The preview says which.
+  - **A documented format:** `docs/plan-format.md` explains each field with a complete example, and a JSON Schema (`public/plan.schema.json`) describes it for tools. The file carries `"format": "fitiq-plan"` and a `"version"` number, so later fields (FV-11's rest default, FV-12's hold at the top) can be added without breaking older files. An AI assistant given the doc, or the schema, can write a file that imports cleanly.
+  - **Unknown fields are ignored** and missing optional fields get their usual defaults, so a hand-written file only needs a name and a list of exercise IDs.
+- **Decided:** a file, not a share link. Nothing is stored on the server for sharing, so plans stay private (plan.md section 2) and there's no public endpoint. The person you send it to needs their own FitIQ account to import it.
+- **Things to check when it's built:**
+  - The import runs every exercise through the same validation as the plan builder (`src/lib/validation.ts`), so a file can't create a plan the app couldn't create itself: name lengths, sets 1 to 20, seconds 1 to 600, release only with a hold.
+  - A size cap on the file (say 200 KB and 100 exercises) and clear error messages for a file that isn't JSON or isn't a FitIQ plan.
+  - On iPhone, the file download and the file picker both work from the installed PWA.
+  - A starter plan (FV-1) could be stored in the same format, so starters and imports share one loader.
+- **Depends on:** Phase 4 plans (done). Works with FV-1 starter plans; FV-11 and FV-12 add fields to the format when they're built.
+- **Data and security:** no schema change. The import inserts a plan and its exercises through `src/lib/data/plans.ts` (and `customExercises.ts` for new custom exercises) as the signed-in user, so RLS and the ownership triggers apply as for any plan; IDs in the file are never used. The file is untrusted input: it's parsed as data only, validated before anything is written, and its text is shown as plain text, never HTML. The RLS test gets no new case, since no new table or policy is involved.
+- **Source:** Bob, 2026-11-11.
 
 ### FV-8. Not planned
 
