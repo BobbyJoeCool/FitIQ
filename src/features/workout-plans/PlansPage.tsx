@@ -30,6 +30,9 @@ export function PlansPage() {
           <Link to="/plans/starters" state={fromPlans} className={controls.button}>
             Starter plans
           </Link>
+          <Link to="/plans/import" state={fromPlans} className={controls.button}>
+            Import a plan
+          </Link>
           <Link to="/plans/new" state={fromPlans} className={controls.primary}>
             New plan
           </Link>
@@ -62,6 +65,9 @@ export function PlansPage() {
               </Link>
               <Link to="/plans/starters" state={fromPlans} className={controls.button}>
                 Use a starter plan
+              </Link>
+              <Link to="/plans/import" state={fromPlans} className={controls.button}>
+                Import a plan
               </Link>
             </span>
           }
