@@ -21,7 +21,7 @@ import { formatPlanTargets } from './format'
 import { parsePlanFile, PLAN_FILE_MAX_BYTES, type ImportItem, type ImportPreview } from './planFile'
 import styles from './plans.module.css'
 
-const FORMAT_DOC = 'https://github.com/BobbyJoeCool/FitIQ/blob/main/docs/plan-format.md'
+const FORMAT_DOC = 'https://github.com/BobbyJoeCool/FitIQ/blob/main/IMPORT-FORMATS.md#plan-files'
 
 const NOTE: Record<ImportItem['kind'], string | null> = {
   catalog: null,

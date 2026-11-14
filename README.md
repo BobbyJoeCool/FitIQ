@@ -40,6 +40,7 @@ React, TypeScript, and Vite on GitHub Pages. The browser talks straight to Supab
 - [`docs/accounts.md`](docs/accounts.md): adding, resetting, and removing accounts, and the demo account
 - [`docs/backup-restore.md`](docs/backup-restore.md): backing up the hosted database and restoring it locally
 - [`docs/adr/`](docs/adr/): architecture decisions, starting with delete behavior per table
+- [`IMPORT-FORMATS.md`](IMPORT-FORMATS.md): the JSON import formats (plan files today), field by field, for writing a file by hand or with an AI assistant
 - [`docs/future-versions.md`](docs/future-versions.md): upgrades planned after v1
 
 ## Setup

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bobbyjoecool.github.io/FitIQ/plan.schema.json",
   "title": "FitIQ plan file",
-  "description": "A FitIQ workout plan, version 2. See docs/plan-format.md in the FitIQ repository. Unknown fields are ignored on import.",
+  "description": "A FitIQ workout plan, version 2. See IMPORT-FORMATS.md in the FitIQ repository. Unknown fields are ignored on import.",
   "type": "object",
   "required": ["format", "version", "name", "exercises"],
   "properties": {

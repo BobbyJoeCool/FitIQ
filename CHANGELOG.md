@@ -7,15 +7,29 @@ All notable changes to FitIQ. The format follows [Keep a Changelog](https://keep
 Planned or wanted after v1. Details, dependencies, and status for each are in [`docs/future-versions.md`](docs/future-versions.md).
 
 - **Email sender on `bobbyjoecool.dev`** (FV-9): send invite and password reset emails from the site's own domain, so family members can be invited by email and reset their own passwords.
-- **Cardio in workout plans** (FV-10): add a cardio item, like a walking pad warm-up, to a plan with target minutes, distance, and incline. It's logged during the workout and shows on the Cardio tab.
+- **Cardio in workout plans** (FV-10): add a cardio item, like a walking pad warm-up, to a plan with target minutes, distance, and incline. It's logged during the workout and shows on the Cardio tab, and so does any exercise marked Cardio. It also lifts the 10-minute cap on timed sets for cardio, so a 20-minute walk is one item instead of two 10-minute sets.
 - **Hold at the top** (FV-12): mark exercises with a hold at the top of each rep. They get a 3-second release by default, which each exercise can override.
 - **Save workout edits to the plan** (FV-13): when you change an exercise's targets during a workout, choose whether the change also updates the plan.
+- **Body composition, and choosing what you track** (FV-16): log muscle mass, body water mass, and bone mass, and pick in Settings which measurements you track. Unchecked ones are hidden from the list and kept, not deleted.
 - **Programs** (FV-7): group plans into a split, by rotation or a weekly schedule, so the dashboard knows today's workout.
 - **Offline workout logging with sync** (FV-2): queue sets on the phone without signal and sync them later.
 - **Move the backend to the home server** (FV-3): self-host Auth and Postgres. Only the two frontend settings change.
 - **Opt-in family sharing and challenges** (FV-4): each person chooses what to share and with whom.
 - **Import the exercise catalog into Postgres** (FV-5): edit or extend catalog exercises, and stop depending on a CDN.
 - **Kinds of stretch** (FV-1, item 5): tag stretches as static, dynamic, or foam rolling, for warm-up and cool-down starters.
+
+## [1.5.5] — 2026-11-13
+
+A new "ember" look. No data or behavior changes, and no migrations.
+
+### Changed
+
+- **Theme**: an orange-to-magenta energy gradient replaces the plain teal. Primary buttons, the active navigation link, and the rest timer bar use it. Page titles get a short gradient bar, and the page background has a soft warm glow. Text colors still meet WCAG AA in light and dark mode.
+- **Navigation**: the side navigation, phone header, and bottom tab bar are dark ink in both color schemes. Each entry now has a workout icon (dumbbell, clipboard, stopwatch, trend line, heart pulse).
+- **Brand**: a gradient dumbbell mark beside the FitIQ wordmark, and new app icons and favicon to match. The browser theme color is now the dark navigation color.
+- **Cards and numbers**: cards have soft shadows, and link cards lift on hover. The dashboard's main card has a gradient stripe and a dumbbell watermark. Stat tiles and the hold timer use bold gradient digits.
+- **Sign-in**: a dark, glowing background behind a white card with a gradient wordmark and button.
+- The service worker's shell cache moves to `v2`, so installed apps pick up the new icons.
 
 ## [1.5.0] — 2026-11-12
 

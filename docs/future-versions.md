@@ -37,6 +37,7 @@ Copy this block under **Upgrades**, give it the next number, and add a row to th
 | FV-13 | [Save workout edits back to the plan](#fv-13-save-workout-edits-back-to-the-plan) | Proposed | Phases 4 and 5 (done) |
 | FV-14 | [Sound and voice cues for the hold timer](#fv-14-sound-and-voice-cues-for-the-hold-timer) | Done in 1.2.0 (#74) | 1.1.0 hold timer (done) |
 | FV-15 | [Share plans as JSON files: export and import](#fv-15-share-plans-as-json-files-export-and-import) | Done in 1.3.0 (#75) | Phase 4 (done) |
+| FV-16 | [Body composition measurements, and choosing what you track](#fv-16-body-composition-measurements-and-choosing-what-you-track) | Proposed | Phase 6 measurements (done) |
 | FV-8 | [Not planned: nutrition, wearables, AI plans, native apps](#fv-8-not-planned) | Not planned | None |
 
 ## Upgrades
@@ -316,17 +317,23 @@ Both modes:
 
 - **Status:** Proposed (requested 2026-11-10)
 - **Why:** a real session often mixes lifting and cardio, like a 10-minute walking pad warm-up before Leg Day or a bike finisher. Today cardio lives on its own Cardio tab. Catalog cardio exercises can go into a plan and are logged in the workout as time and distance sets, but the plan can't hold a cardio target, there's no walking pad preset or incline, and those sets never show up on the Cardio tab or in its weekly totals.
+- **The 10-minute cap:** a timed set's Seconds tops out at 600 (`targetSecondsMax` in `src/lib/validation.ts`), so a longer cardio block doesn't fit in one set. A 20-minute walking pad warm-up today has to be written as two 10-minute sets with no rest between them, with a note explaining the split (as in the Day 1 to Day 4 plan files).
 - **What:**
   - A plan can include a **cardio item**: an activity (walking pad, walk, run, bike, and so on, the same list as the Cardio tab) with target minutes, and optionally distance and incline. It sits in the plan's order like any exercise, so it can be a warm-up, in the middle, or a finisher.
+  - **Target minutes have no 10-minute cap.** A cardio item takes its length in minutes, up to a sensible limit such as 180, so a 20-minute walk is one item with one timer and one entry, not two back-to-back sets.
   - In the workout, the cardio item shows its target and a timer, with the walking pad preset filling minutes, incline, and distance unit. Completing it saves one entry.
+  - **Every exercise marked Cardio logs to the Cardio tab too**, not only plan cardio items. Any exercise whose movement type is cardio, from the catalog or your own custom exercises, in a plan or added mid-workout, saves a cardio entry when its sets are logged: total time and distance from the sets, and the workout's date. The exercise maps to a Cardio tab activity (walking pad, walk, run, cycle, elliptical, rowing, swim, hike), set on custom exercises and matched by name for catalog ones, and falls back to **Other**.
+  - Several sets of the same cardio exercise in one workout, like two 10-minute walking blocks, make **one** cardio entry with their time and distance added up, not one per set.
+  - Editing or deleting those sets in the workout updates or removes the cardio entry, so the two never disagree.
   - That entry counts everywhere cardio counts: the Cardio tab's history and weekly tiles, the dashboard's Recent cardio, and the cardio CSV, linked back to the workout it came from. It isn't counted twice.
   - The workout's finish review and detail page show the cardio item with its time and distance.
 - **Depends on:** Phase 4 plans, Phase 5 workouts, Phase 7 cardio (all done).
 - **Data and security** (a sketch, to settle when it's scheduled):
-  - `workout_plan_exercises` gains a way to hold a cardio item and its targets (for example `cardio_activity`, `target_minutes`, `target_distance`, `target_incline`, with CHECKs that it's either an exercise or a cardio item).
-  - `cardio_sessions` gains a nullable `workout_session_id` (set null if the workout is deleted), so a cardio entry made in a workout is the single record, rather than a set plus a separate cardio row.
+  - `workout_plan_exercises` gains a way to hold a cardio item and its targets (for example `cardio_activity`, `target_minutes`, `target_distance`, `target_incline`, with CHECKs that it's either an exercise or a cardio item). `target_minutes` gets its own range (for example 1 to 180), separate from the 600-second limit on timed sets, which stays for holds and stretches.
+  - `cardio_sessions` gains a nullable `workout_session_id` (set null if the workout is deleted), so a cardio entry made in a workout is the single record, rather than a set plus a separate cardio row. With the "every Cardio exercise" rule it also needs the workout exercise it came from (`workout_session_exercise_id`, unique), so there's one entry per cardio exercise per workout and editing the sets can update it.
+  - Custom exercises gain an optional `cardio_activity`, and catalog cardio exercises get a name-to-activity map in code (for example "Walking, Treadmill" to walk), with `other` as the fallback.
   - RLS is unchanged in shape, since both tables are owner-only. The ownership trigger must make sure the linked workout belongs to the same user, and the RLS test gets the cross-parent check. ADR 0001 notes what happens to the cardio entry when its workout is deleted.
-- **Source:** Bob, 2026-11-10.
+- **Source:** Bob, 2026-11-10. The 10-minute cap was added 2026-11-13, from the 20-minute walking pad warm-up in Bob's plan files. "Every exercise marked Cardio logs to the Cardio tab" was added 2026-11-13.
 
 ### FV-11. Default rest, with per-exercise overrides
 
@@ -407,7 +414,7 @@ Both modes:
 
 ### FV-15. Share plans as JSON files: export and import
 
-- **Status:** Done in 1.3.0 (issue #75). Format in `docs/plan-format.md`; schema in `public/plan.schema.json`. Archived custom exercises don't count as a name match, so a new one is created. Starter plans still live in code (the shared-loader idea below is not done).
+- **Status:** Done in 1.3.0 (issue #75). Format in `IMPORT-FORMATS.md` (was `docs/plan-format.md`); schema in `public/plan.schema.json`. Archived custom exercises don't count as a name match, so a new one is created. Starter plans still live in code (the shared-loader idea below is not done).
 - **Why:** plans are private, so there's no way to hand a good routine to someone else, in the household or outside it, short of rebuilding it exercise by exercise. A file format also lets a routine be written outside the app, by hand or by an AI assistant asked to "make me a FitIQ plan", and then imported in one step.
 - **What:**
   - **Export:** a **Share as file** action on a plan downloads `<plan-name>.fitiq-plan.json`: the plan's name and description, and each exercise in order with its targets (sets, reps, hold seconds, per side, release, rest, notes). No user IDs, plan IDs, dates, or workout history go in the file.
@@ -425,6 +432,26 @@ Both modes:
 - **Depends on:** Phase 4 plans (done). Works with FV-1 starter plans; FV-11 and FV-12 add fields to the format when they're built.
 - **Data and security:** no schema change. The import inserts a plan and its exercises through `src/lib/data/plans.ts` (and `customExercises.ts` for new custom exercises) as the signed-in user, so RLS and the ownership triggers apply as for any plan; IDs in the file are never used. The file is untrusted input: it's parsed as data only, validated before anything is written, and its text is shown as plain text, never HTML. The RLS test gets no new case, since no new table or policy is involved.
 - **Source:** Bob, 2026-11-11.
+
+### FV-16. Body composition measurements, and choosing what you track
+
+- **Status:** Proposed (requested 2026-11-13)
+- **Why:** smart scales report more than weight and body fat: muscle mass, body water, and bone mass. There's nowhere to log those today. And as the list grows, most people only track a few measurements, so the rest are clutter in the Measurements list and the log form.
+- **What:**
+  - **Three new measurement types:** **Muscle mass**, **Body water mass**, and **Bone mass**. They're weights, so they're entered and shown in your weight unit (lb or kg, from Settings), like weigh-ins, and charted on the Measurements screen like the others.
+  - **Settings → Measurements I track:** a checkbox for each measurement type (waist, hips, chest, … body fat, and the three new ones). Only checked types appear in the Measurements list and in the type picker when logging one.
+  - Unchecking a type **hides it; it doesn't delete anything**. Its past entries stay in the database and come back when you check it again.
+  - Defaults: every existing type stays checked, so nothing changes for current users. The three new types start unchecked, so they only appear for people who turn them on.
+- **Depends on:** Phase 6 measurements (done).
+- **Data and security** (a sketch, to settle when it's scheduled):
+  - `body_measurements`: add `muscle_mass`, `body_water_mass`, and `bone_mass` to the `measurement_type` CHECK and to `MEASUREMENT_TYPES` in `src/lib/measurementTypes.ts`. Allow `lb` and `kg` as `measurement_unit`, and require them for exactly these three types, the way `%` goes with `body_fat` now. Each gets a sensible value range (for example 1 to 400 lb / 0.5 to 180 kg).
+  - `profiles` gains `tracked_measurements text[]`. Null means "the defaults above", so there's no backfill. An update grant on the column, and a CHECK that every entry is a known type.
+  - CSV export includes the new types with their units.
+  - No new tables. RLS is unchanged in shape: `body_measurements` and `profiles` are already owner-only.
+- **To settle when it's scheduled:**
+  - Should a hidden type that has past entries still show on Progress charts, or be hidden there too? Proposed: hidden everywhere, with a note in Settings that the data is kept.
+  - Should body water also be allowed as a percentage, since some scales only give a %? Proposed: mass only, as requested, and revisit if a scale needs it.
+- **Source:** Bob, 2026-11-13.
 
 ### FV-8. Not planned
 

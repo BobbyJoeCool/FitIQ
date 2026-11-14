@@ -9,7 +9,7 @@
  * - Supabase and everything else: never cached. No workout data is stored here;
  *   offline logging is out of scope for v1 (plan.md section 10).
  */
-const VERSION = 'v1'
+const VERSION = 'v2'
 const SHELL = `fitiq-shell-${VERSION}`
 const ASSETS = `fitiq-assets-${VERSION}`
 const CATALOG = 'fitiq-catalog-v1'

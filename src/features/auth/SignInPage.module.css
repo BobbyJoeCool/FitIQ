@@ -3,22 +3,47 @@
   display: grid;
   place-items: center;
   padding: var(--space-4);
+  /* Dark ink with two ember glows, like the navigation chrome. */
+  background:
+    radial-gradient(520px 380px at 85% 10%, rgb(255 122 24 / 0.32), transparent 70%),
+    radial-gradient(520px 380px at 10% 95%, rgb(255 61 110 / 0.26), transparent 70%),
+    var(--color-chrome);
 }
 
 .card {
+  position: relative;
+  overflow: hidden;
   width: 100%;
   max-width: 380px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.35);
   padding: var(--space-6) var(--space-5);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: var(--gradient-bright);
 }
 
 .brand {
   color: var(--color-primary);
-  font-size: var(--font-size-2xl);
-  margin-bottom: var(--space-1);
+  font-size: 2.5rem;
+  font-style: italic;
+  letter-spacing: -0.04em;
+  margin-bottom: var(--space-2);
+}
+
+/* Gradient text; browsers without -webkit-text-fill-color keep the solid color. */
+.brand {
+  background: var(--gradient-button);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .lede {
@@ -38,6 +63,11 @@
   font-weight: var(--font-weight-semibold);
 }
 
+.field input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
 .field input {
   min-height: var(--tap-target);
   padding: var(--space-2) var(--space-3);
@@ -49,13 +79,19 @@
 }
 
 .submit {
-  min-height: var(--tap-target);
+  min-height: 48px;
   border: 0;
   border-radius: var(--radius-sm);
-  background: var(--color-primary);
+  background: var(--gradient-button);
   color: var(--color-on-primary);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.01em;
+  box-shadow: var(--shadow-glow);
   cursor: pointer;
+}
+
+.submit:hover:not(:disabled) {
+  background: var(--gradient-button-hover);
 }
 
 .submit:disabled {

@@ -36,6 +36,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .rowLink {
@@ -101,6 +102,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
   color: inherit;
   text-align: left;
   cursor: pointer;
@@ -135,6 +137,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .card h2 {
@@ -241,6 +244,7 @@
   padding: var(--space-3);
   border-radius: var(--radius-md);
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
   text-align: center;
 }
 
@@ -262,9 +266,10 @@
 }
 
 .timerValue {
-  font-size: 3rem;
+  font-size: 3.5rem;
   font-variant-numeric: tabular-nums;
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.03em;
   line-height: 1;
 }
 
@@ -277,8 +282,9 @@
   min-height: 56px;
   padding: var(--space-1) var(--space-2) var(--space-1) var(--space-4);
   border-radius: var(--radius-md);
-  background: var(--color-danger);
-  color: var(--color-on-danger);
+  background: var(--gradient-button);
+  color: var(--color-on-primary);
+  box-shadow: var(--shadow-glow);
 }
 
 .skipRest {
@@ -334,6 +340,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .stats dt {
@@ -375,4 +382,13 @@
   display: inline-flex;
   align-items: center;
   min-height: var(--tap-target);
+}
+
+/* Gradient text; browsers without -webkit-text-fill-color keep the solid color. */
+.timerValue,
+.stats dd {
+  background: var(--gradient-button);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
