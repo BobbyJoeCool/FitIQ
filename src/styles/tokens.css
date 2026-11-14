@@ -1,20 +1,37 @@
-/* FitIQ design tokens: the one place colors, spacing, and type live. */
+/* FitIQ design tokens: the one place colors, spacing, and type live.
+   Theme: "ember". A warm orange-to-magenta energy gradient on dark ink
+   navigation, with bold type. Text colors meet WCAG AA on their surfaces. */
 :root {
   /* Color */
-  --color-bg: #f6f7f9;
+  --color-bg: #f4f2ef;
   --color-surface: #ffffff;
-  --color-surface-muted: #eef1f4;
-  --color-text: #15202b;
-  --color-text-muted: #5b6875;
-  --color-border: #d9dee4;
-  --color-primary: #0f766e;
-  --color-primary-strong: #0b5c56;
+  --color-surface-muted: #f1eeea;
+  --color-text: #15181f;
+  --color-text-muted: #5c6370;
+  --color-border: #e4e0da;
+  --color-primary: #c2410c;
+  --color-primary-strong: #9a3412;
+  --color-primary-soft: rgb(234 88 12 / 0.1);
   --color-on-primary: #ffffff;
   --color-success: #15803d;
-  --color-warning: #b45309;
+  --color-warning: #a16207;
   --color-danger: #b91c1c;
   --color-on-danger: #ffffff;
   --color-focus: #2563eb;
+
+  /* Energy gradients: "bright" is decoration only (no text on it); "button"
+     carries text in --color-on-primary. */
+  --gradient-bright: linear-gradient(135deg, #ff7a18 0%, #ff3d6e 100%);
+  --gradient-button: linear-gradient(135deg, #c2410c 0%, #be185d 100%);
+  --gradient-button-hover: linear-gradient(135deg, #9a3412 0%, #9d174d 100%);
+  --glow: rgb(255 92 40 / 0.14);
+
+  /* Navigation chrome: dark ink in both color schemes. */
+  --color-chrome: #11141b;
+  --color-chrome-raised: #1c212c;
+  --color-chrome-border: #232936;
+  --color-chrome-text: #aab2c0;
+  --color-chrome-active: #ff8a3d;
 
   /* Spacing (4px scale) */
   --space-1: 0.25rem;
@@ -35,15 +52,18 @@
   --font-size-2xl: 2rem;
   --font-weight-normal: 400;
   --font-weight-semibold: 600;
+  --font-weight-bold: 800;
   --line-height: 1.5;
 
   /* Shape and layout */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --shadow-sm: 0 1px 2px rgb(20 16 10 / 0.05), 0 2px 6px rgb(20 16 10 / 0.06);
+  --shadow-md: 0 2px 4px rgb(20 16 10 / 0.05), 0 8px 24px rgb(20 16 10 / 0.08);
+  --shadow-glow: 0 6px 20px rgb(234 88 12 / 0.28);
   --tap-target: 44px;
-  --sidebar-width: 220px;
+  --sidebar-width: 232px;
   --bottom-nav-height: 64px;
 
   /* Breakpoints (reference only: CSS custom properties can't be used in
@@ -52,19 +72,28 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #0f1419;
-    --color-surface: #182029;
-    --color-surface-muted: #212b36;
-    --color-text: #e7ecf1;
-    --color-text-muted: #9aa7b4;
-    --color-border: #2d3945;
-    --color-primary: #2dd4bf;
-    --color-primary-strong: #5eead4;
-    --color-on-primary: #04211e;
+    --color-bg: #0c0e13;
+    --color-surface: #161a22;
+    --color-surface-muted: #1f2430;
+    --color-text: #eef0f4;
+    --color-text-muted: #9aa3b2;
+    --color-border: #2a303c;
+    --color-primary: #ff8a3d;
+    --color-primary-strong: #ffa766;
+    --color-primary-soft: rgb(255 138 61 / 0.14);
+    --color-on-primary: #1a0a00;
     --color-success: #4ade80;
     --color-warning: #fbbf24;
     --color-danger: #f87171;
     --color-on-danger: #2a0606;
-    --shadow-sm: none;
+    --gradient-button: linear-gradient(135deg, #ff8a3d 0%, #ff5c8a 100%);
+    --gradient-button-hover: linear-gradient(135deg, #ffa766 0%, #ff7aa0 100%);
+    --glow: rgb(255 92 40 / 0.1);
+    --color-chrome: #08090d;
+    --color-chrome-raised: #161a22;
+    --color-chrome-border: #1c212b;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 8px 24px rgb(0 0 0 / 0.35);
+    --shadow-glow: 0 6px 22px rgb(255 92 60 / 0.25);
   }
 }

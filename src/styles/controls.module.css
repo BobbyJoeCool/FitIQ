@@ -14,10 +14,20 @@
   font-weight: var(--font-weight-semibold);
   text-decoration: none;
   cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    transform 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .button:hover {
+  border-color: var(--color-primary);
   background: var(--color-surface-muted);
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
 }
 
 .button:disabled {
@@ -27,13 +37,17 @@
 
 .primary {
   composes: button;
-  border-color: var(--color-primary);
-  background: var(--color-primary);
+  border-color: transparent;
+  background: var(--gradient-button);
   color: var(--color-on-primary);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.01em;
+  box-shadow: var(--shadow-glow);
 }
 
 .primary:hover {
-  background: var(--color-primary-strong);
+  border-color: transparent;
+  background: var(--gradient-button-hover);
 }
 
 .field {
@@ -52,6 +66,14 @@
   background: var(--color-surface);
   color: var(--color-text);
   font-weight: var(--font-weight-normal);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
 .input[aria-invalid='true'] {

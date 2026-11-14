@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router'
 import { OfflineBanner } from '../components/common/OfflineBanner'
 import { ProfileProvider } from '../features/profile/ProfileProvider'
+import { BrandMark, NavIcon } from './NavIcon'
 import { NAV_ITEMS } from './navigation'
 import { SidebarSlotContext } from './sidebarSlotContext'
 import styles from './AppShell.module.css'
@@ -19,11 +20,13 @@ export function AppShell() {
     <div className={styles.shell}>
       <header className={styles.header}>
         <Link to="/" className={styles.brand}>
+          <BrandMark className={styles.brandMark} />
           FitIQ
         </Link>
         <nav aria-label="Account">
           {headerItems.map((item) => (
             <NavLink key={item.to} to={item.to} className={linkClass(styles.headerLink)}>
+              <NavIcon name={item.icon} className={styles.icon} />
               {item.label}
             </NavLink>
           ))}
@@ -32,6 +35,7 @@ export function AppShell() {
 
       <nav className={styles.sidebar} aria-label="Main">
         <Link to="/" className={styles.brand}>
+          <BrandMark className={styles.brandMark} />
           FitIQ
         </Link>
         {NAV_ITEMS.map((item) => (
@@ -41,6 +45,7 @@ export function AppShell() {
             end={item.to === '/'}
             className={linkClass(styles.sideLink)}
           >
+            <NavIcon name={item.icon} className={styles.icon} />
             {item.label}
           </NavLink>
         ))}
@@ -64,7 +69,8 @@ export function AppShell() {
             end={item.to === '/'}
             className={linkClass(styles.tab)}
           >
-            {item.label}
+            <NavIcon name={item.icon} className={styles.icon} />
+            <span className={styles.tabLabel}>{item.label}</span>
           </NavLink>
         ))}
       </nav>

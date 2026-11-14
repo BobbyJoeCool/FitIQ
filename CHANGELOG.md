@@ -17,6 +17,19 @@ Planned or wanted after v1. Details, dependencies, and status for each are in [`
 - **Import the exercise catalog into Postgres** (FV-5): edit or extend catalog exercises, and stop depending on a CDN.
 - **Kinds of stretch** (FV-1, item 5): tag stretches as static, dynamic, or foam rolling, for warm-up and cool-down starters.
 
+## [1.5.5] — 2026-11-13
+
+A new "ember" look. No data or behavior changes, and no migrations.
+
+### Changed
+
+- **Theme**: an orange-to-magenta energy gradient replaces the plain teal. Primary buttons, the active navigation link, and the rest timer bar use it. Page titles get a short gradient bar, and the page background has a soft warm glow. Text colors still meet WCAG AA in light and dark mode.
+- **Navigation**: the side navigation, phone header, and bottom tab bar are dark ink in both color schemes. Each entry now has a workout icon (dumbbell, clipboard, stopwatch, trend line, heart pulse).
+- **Brand**: a gradient dumbbell mark beside the FitIQ wordmark, and new app icons and favicon to match. The browser theme color is now the dark navigation color.
+- **Cards and numbers**: cards have soft shadows, and link cards lift on hover. The dashboard's main card has a gradient stripe and a dumbbell watermark. Stat tiles and the hold timer use bold gradient digits.
+- **Sign-in**: a dark, glowing background behind a white card with a gradient wordmark and button.
+- The service worker's shell cache moves to `v2`, so installed apps pick up the new icons.
+
 ## [1.5.0] — 2026-11-12
 
 Default rest, with per-exercise overrides (FV-11, [#77](https://github.com/BobbyJoeCool/FitIQ/issues/77)). One migration, `20261112000100_default_rest.sql`.
