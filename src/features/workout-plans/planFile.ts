@@ -10,7 +10,7 @@ import { validateCustomExercise, validatePlan, validateTargets } from '../../lib
 
 /**
  * Plan files (FV-15): a plan as JSON, so it can be shared or written outside
- * the app and imported. The format is documented in docs/plan-format.md and
+ * the app and imported. The format is documented in IMPORT-FORMATS.md and
  * public/plan.schema.json. A file is untrusted input: everything is checked
  * with the plan builder's own validation before anything is saved, and IDs
  * in the file are never used except as catalog exercise IDs.

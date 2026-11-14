@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { PlanWithExercises } from '../../lib/data'
 import { NO_PLAN_TARGETS } from '../../lib/data/plans'
-import formatDoc from '../../../docs/plan-format.md?raw'
+import importFormats from '../../../IMPORT-FORMATS.md?raw'
 import { LIBRARY, makeExercise } from '../../test/exerciseFixtures'
 import { buildPlanFile, parsePlanFile, planFileName, planFileText } from './planFile'
 
@@ -233,8 +233,13 @@ describe('parsePlanFile (FV-15)', () => {
   })
 })
 
-describe('docs/plan-format.md (FV-15)', () => {
-  it('has examples that import cleanly', () => {
+describe('IMPORT-FORMATS.md plan files (FV-15)', () => {
+  it('has plan examples that import cleanly', () => {
+    // Only the Plan files section: other import types have their own examples.
+    const start = importFormats.indexOf('\n## Plan files')
+    expect(start).toBeGreaterThan(-1)
+    const next = importFormats.indexOf('\n## ', start + 1)
+    const formatDoc = importFormats.slice(start, next === -1 ? undefined : next)
     const examples = [...formatDoc.matchAll(/```json\n([\s\S]*?)```/g)].map((m) => m[1])
     expect(examples.length).toBeGreaterThanOrEqual(2)
     const ids = ['Barbell_Squat', 'Romanian_Deadlift', 'Plank', 'Hamstring_Stretch', 'Pushups']
